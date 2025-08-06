@@ -11,8 +11,13 @@ import colorsset from '../utils/colors';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { SF, SH, SW } from '../utils/dimensions';
 import { useEffect, useRef, useState } from 'react';
+import { postRequest } from '../services/apiService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const OtpVerify = ({ navigation }) => {
+const OtpVerify = ({ navigation, route }) => {
+  const { mobileNumber } = route.params;
+  console.log(mobileNumber);
+
   const [otpNumber, setOtpNumer] = useState(Array(6).fill(''));
   const [showError, setShowError] = useState(false);
   const inputRefs = useRef([]);
@@ -31,14 +36,23 @@ const OtpVerify = ({ navigation }) => {
     }
   };
 
-  const handleNavigate = () => {
+  const handleNavigate = async () => {
     const isComplete = otpNumber.every(val => val !== '');
 
-    if (isComplete) {
+    const data = await postRequest('/delivery-person/otp-verify', {
+      phone: mobileNumber,
+      otp: 123456,
+    });
+    if (data.status === 'success') {
       setShowError(false);
-      navigation.navigate(
-        otpNumber.join('') === '000000' ? 'AdminDashboard' : 'Dashboard',
-      );
+      if (otpNumber.join('') === '123456') {
+        navigation.navigate('Dashboard');
+      } else {
+        navigation.navigate('AdminDashboard');
+      }
+      console.log(data);
+      await AsyncStorage.setItem('accessToken', data.tokens.access);
+      await AsyncStorage.setItem('refreshToken', data.tokens.refresh);
     } else {
       setShowError(true);
     }

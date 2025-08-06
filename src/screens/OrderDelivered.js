@@ -12,7 +12,8 @@ import { SF, SH, SW } from '../utils/dimensions';
 import Icon from 'react-native-vector-icons/Ionicons';
 import images from '../image/images';
 
-const orderDelivered = ({ navigation }) => {
+const orderDelivered = ({ navigation, route }) => {
+  const { distance, duration } = route.params;
   const handleBack = () => {
     navigation.goBack();
   };
@@ -109,7 +110,7 @@ const orderDelivered = ({ navigation }) => {
                 color: 'rgba(0, 0, 0, 1)',
               }}
             >
-              10.5 KM
+              {distance || 0} KM
             </Text>
             <Text
               style={{
@@ -137,7 +138,7 @@ const orderDelivered = ({ navigation }) => {
                 color: 'rgba(0, 0, 0, 1)',
               }}
             >
-              20 Mins
+              {duration.toFixed(2) || 0} Mins
             </Text>
             <Text
               style={{

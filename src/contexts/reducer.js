@@ -9,11 +9,13 @@ export const initialState = {
         '1/78, Middle Street, Veeranamangalam, Near Lutheran Church - 629901',
       paidStatus: 'Not Paid',
       amount: '₹ 1250/-',
-      status: 'Pickup Pending',
+      status: 'Picked Up',
       duration: 0,
       distance: 0,
       updatedAt: '2025-07-12T22:30:00.000Z',
       updatedTime: '10.30 PM',
+      mobileNumber: 9500413626,
+      // location: { latitude: 12.9987, longitude: 77.592 },
       location: { latitude: 8.2, longitude: 77.366 },
     },
     {
@@ -27,6 +29,7 @@ export const initialState = {
       distance: 0,
       updatedAt: '2025-07-10T17:15:00.000Z',
       updatedTime: '10.30 PM',
+      mobileNumber: 9500413626,
       location: { latitude: 8.175, longitude: 77.428 },
     },
     {
@@ -40,7 +43,9 @@ export const initialState = {
       distance: 0,
       updatedAt: '2025-07-20T08:00:00.000Z',
       updatedTime: '10.30 PM',
+      mobileNumber: 9500413626,
       location: { latitude: 8.1744, longitude: 77.4235 },
+      // location: { latitude: 12.9987, longitude: 77.592 },
     },
     {
       orderId: '1004',
@@ -54,6 +59,7 @@ export const initialState = {
       distance: 0,
       updatedAt: '2025-06-15T10:30:00.000Z',
       updatedTime: '10.30 PM',
+      mobileNumber: 9500413626,
       location: { latitude: 8.1512, longitude: 77.471 },
     },
     {
@@ -67,6 +73,7 @@ export const initialState = {
       distance: 0,
       updatedAt: '2025-06-28T10:30:00.000Z',
       updatedTime: '10.30 PM',
+      mobileNumber: 9500413626,
       location: { latitude: 8.3136, longitude: 77.2235 },
     },
     {
@@ -80,6 +87,7 @@ export const initialState = {
       distance: 0,
       updatedAt: '2025-07-04T10:30:00.000Z',
       updatedTime: '10.30 PM',
+      mobileNumber: 9500413626,
       location: { latitude: 8.1791, longitude: 77.2608 },
     },
     {
@@ -93,6 +101,7 @@ export const initialState = {
       distance: 0,
       updatedAt: '2025-07-12T10:30:00.000Z',
       updatedTime: '10.30 PM',
+      mobileNumber: 9500413626,
       location: { latitude: 8.084, longitude: 77.541 },
     },
     {
@@ -106,6 +115,7 @@ export const initialState = {
       distance: 0,
       updatedAt: '2025-07-02T10:30:00.000Z',
       updatedTime: '10.30 PM',
+      mobileNumber: 9500413626,
       location: { latitude: 8.2475, longitude: 77.343 },
     },
     {
@@ -119,6 +129,7 @@ export const initialState = {
       distance: 0,
       updatedAt: '2025-07-01T10:30:00.000Z',
       updatedTime: '10.30 PM',
+      mobileNumber: 9500413626,
       location: { latitude: 8.2222, longitude: 77.3205 },
     },
     {
@@ -132,6 +143,7 @@ export const initialState = {
       distance: 0,
       updatedAt: '2025-06-25T10:30:00.000Z',
       updatedTime: '10.30 PM',
+      mobileNumber: 9500413626,
       location: { latitude: 8.3155, longitude: 77.2364 },
     },
     {
@@ -145,6 +157,7 @@ export const initialState = {
       distance: 0,
       updatedAt: '2025-07-24T10:30:00.000Z',
       updatedTime: '10.30 PM',
+      mobileNumber: 9500413626,
       location: { latitude: 8.1747, longitude: 77.4229 },
     },
     {
@@ -158,6 +171,7 @@ export const initialState = {
       distance: 0,
       updatedAt: '2025-07-10T10:30:00.000Z',
       updatedTime: '10.30 PM',
+      mobileNumber: 9500413626,
       location: { latitude: 8.21, longitude: 77.445 },
     },
     {
@@ -171,6 +185,7 @@ export const initialState = {
       distance: 0,
       updatedAt: '2025-07-20T10:30:00.000Z',
       updatedTime: '10.30 PM',
+      mobileNumber: 9500413626,
       location: { latitude: 8.2378, longitude: 77.4091 },
     },
     {
@@ -184,6 +199,7 @@ export const initialState = {
       distance: 0,
       updatedAt: '2025-07-23T10:30:00.000Z',
       updatedTime: '10.30 PM',
+      mobileNumber: 9500413626,
       location: { latitude: 8.319, longitude: 77.2955 },
     },
     {
@@ -197,6 +213,7 @@ export const initialState = {
       distance: 0,
       updatedAt: '2025-06-21T10:30:00.000Z',
       updatedTime: '10.30 PM',
+      mobileNumber: 9500413626,
       location: { latitude: 8.3039, longitude: 77.2568 },
     },
     {
@@ -210,6 +227,7 @@ export const initialState = {
       distance: 0,
       updatedAt: '2025-06-09T10:30:00.000Z',
       updatedTime: '10.30 PM',
+      mobileNumber: 9500413626,
       location: { latitude: 8.2255, longitude: 77.3022 },
     },
     {
@@ -223,6 +241,7 @@ export const initialState = {
       distance: 0,
       updatedAt: '2025-06-15T10:30:00.000Z',
       updatedTime: '10.30 PM',
+      mobileNumber: 9500413626,
       location: { latitude: 8.1588, longitude: 77.2933 },
     },
     {
@@ -236,6 +255,7 @@ export const initialState = {
       distance: 0,
       updatedAt: '2025-06-28T10:30:00.000Z',
       updatedTime: '10.30 PM',
+      mobileNumber: 9500413626,
       location: { latitude: 8.1097, longitude: 77.4884 },
     },
     {
@@ -249,6 +269,7 @@ export const initialState = {
       distance: 0,
       updatedAt: '2025-07-04T10:30:00.000Z',
       updatedTime: '10.30 PM',
+      mobileNumber: 9500413626,
       location: { latitude: 8.2378, longitude: 77.4091 },
     },
     {
@@ -262,6 +283,7 @@ export const initialState = {
       distance: 0,
       updatedAt: '2025-07-12T10:30:00.000Z',
       updatedTime: '10.30 PM',
+      mobileNumber: 9500413626,
       location: { latitude: 8.3913, longitude: 77.2582 },
     },
   ],
@@ -278,6 +300,15 @@ export const GlobalReducer = (state, action) => {
       return { ...state, user: null };
     case 'SET_ORDER_DETAILS':
       return { ...state, orderDetails: action.payload };
+    case 'UPDATE_ORDER_STATUS': {
+      const { orderId, newStatus } = action.payload;
+      return {
+        ...state,
+        orderDetails: state.orderDetails.map(order =>
+          order.orderId === orderId ? { ...order, status: newStatus } : order,
+        ),
+      };
+    }
     default:
       return state;
   }

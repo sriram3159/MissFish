@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import Geolocation from '@react-native-community/geolocation';
 import axios from 'axios';
-
-const GOOGLE_API_KEY = 'AIzaSyAY2dJykSYpx-o7UgVHP5X_CfyyPm-UvOY'; // Replace with your actual key
+import { GOOGLE_MAPS_APIKEY } from '@env';
 
 export const useDistanceDurationFromGPS = destination => {
   const [distance, setDistance] = useState(null);
@@ -42,7 +41,7 @@ export const useDistanceDurationFromGPS = destination => {
             params: {
               origin: originStr,
               destination: destinationStr,
-              key: GOOGLE_API_KEY,
+              key: GOOGLE_MAPS_APIKEY,
               mode: 'driving',
             },
           },

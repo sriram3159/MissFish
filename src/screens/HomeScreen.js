@@ -10,22 +10,36 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
-import { useGlobalContext } from '../contexts/globalContext';
 import colorsset from '../utils/colors';
 import { SF, SH, SW } from '../utils/dimensions';
 import images from '../image/images';
 import LinearGradient from 'react-native-linear-gradient';
+import { loginUser } from '../services/authService';
 
 const HomeScreen = ({ navigation }) => {
-  const { state, dispatch } = useGlobalContext();
   const [mobileNumber, setMobileNumber] = useState('');
   const [showError, setShowError] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleNavigate = () => {
+  const handleLogin = async () => {
+    setLoading(true);
     if (mobileNumber.length === 10) {
       setShowError(false);
-      navigation.replace('OtpVerify');
+      try {
+        const data = await loginUser({ phone: mobileNumber });
+        console.log(data);
+        if (data.status === 'success') {
+          navigation.replace('OtpVerify', { mobileNumber });
+        }
+      } catch (error) {
+        console.log(error);
+
+        Alert.alert('OTP Send status', error.status || 'Something went wrong');
+      } finally {
+        setLoading(false);
+      }
     } else {
       setShowError(true);
     }
@@ -69,7 +83,7 @@ const HomeScreen = ({ navigation }) => {
         <Text style={style.text}>Enter Mobile Number</Text>
         <TextInput
           style={style.input}
-          keyboardType="number-pad"
+          keyboardType="default"
           maxLength={10}
           value={mobileNumber}
           onChangeText={text => setMobileNumber(text.replace(/[^0-9]/g, ''))}
@@ -79,7 +93,7 @@ const HomeScreen = ({ navigation }) => {
             Please enter a valid 10-digit number
           </Text>
         )}
-        <TouchableOpacity onPress={handleNavigate} style={style.button}>
+        <TouchableOpacity onPress={handleLogin} style={style.button}>
           <Text style={style.buttonText}>Send OTP</Text>
         </TouchableOpacity>
       </ScrollView>

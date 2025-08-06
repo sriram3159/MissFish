@@ -8,9 +8,9 @@ import {
   Animated,
   StatusBar,
   Easing,
+  Linking,
 } from 'react-native';
 
-import colorsset from '../utils/colors';
 import Icon from 'react-native-vector-icons/Ionicons';
 import FontAwesomeIcon from 'react-native-vector-icons/FontAwesome5';
 import { SF, SH, SW } from '../utils/dimensions';
@@ -18,14 +18,26 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import images from '../image/images';
 import Map from '../components/commonComponent/Map';
 import { useState, useRef, useEffect } from 'react';
+import { useGlobalContext } from '../contexts/globalContext';
+import SwitchToggle from 'react-native-switch-toggle';
 
 const Order = ({ navigation, route }) => {
+  const { state, dispatch } = useGlobalContext();
+
   const { orderDetail } = route.params;
-  console.log(orderDetail?.status);
 
   const [distance, setDistance] = useState(null);
   const [duration, setDuration] = useState(null);
   const [isInfoOpen, setIsInfoOpen] = useState(false);
+  const [orderData, setOrderData] = useState({});
+  useEffect(() => {
+    const match = state.orderDetails.find(
+      order => order.orderId === orderDetail.orderId,
+    );
+    if (match) {
+      setOrderData(match);
+    }
+  }, [orderDetail, state.orderDetails]);
   const handleBack = () => {
     navigation.navigate('Dashboard');
   };
@@ -55,6 +67,8 @@ const Order = ({ navigation, route }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const headerRef = useRef(null);
   const [headerHeight, setHeaderHeight] = useState(SH(65));
+  const [isEnabled, setIsEnabled] = useState(false);
+  const toggleSwitch = () => setIsEnabled(previousState => !previousState);
 
   useEffect(() => {
     if (headerRef.current) {
@@ -85,13 +99,38 @@ const Order = ({ navigation, route }) => {
   };
 
   const orderType = {
-    ['Delivered']: 'Mark as Delivered',
-    ['Pickup Pending']: 'Mark As Picked Up',
-    ['Order inprogress']: 'Swipe To Accept Order',
+    ['Picked Up']: { text: 'Mark as Delivered', statusChange: 'Delivered' },
+    ['Pickup Pending']: {
+      text: 'Mark As Picked Up',
+      statusChange: 'Picked Up',
+    },
+    ['Order inprogress']: {
+      text: 'Swipe To Accept Order',
+      statusChange: 'Pickup Pending',
+    },
   };
 
-  const handleNavigate = () => {
-    navigation.navigate('OrderDelivered');
+  const handleChangeStatus = status => {
+    dispatch({
+      type: 'UPDATE_ORDER_STATUS',
+      payload: {
+        orderId: orderData.orderId,
+        newStatus: status,
+      },
+    });
+  };
+  const handleNavigate = status => {
+    dispatch({
+      type: 'UPDATE_ORDER_STATUS',
+      payload: {
+        orderId: orderData.orderId,
+        newStatus: status,
+      },
+    });
+    navigation.navigate('OrderDelivered', {
+      distance: Number(distance).toFixed(2),
+      duration,
+    });
   };
 
   return (
@@ -150,11 +189,13 @@ const Order = ({ navigation, route }) => {
           }}
         >
           <Map
+            status={orderData.status}
+            orderId={orderData.orderId}
             distance={distance}
             duration={duration}
             setDistance={setDistance}
             setDuration={setDuration}
-            location={orderDetail.location}
+            location={orderData.location}
           />
 
           {isInfoOpen && (
@@ -224,7 +265,7 @@ const Order = ({ navigation, route }) => {
                     fontWeight: 700,
                   }}
                 >
-                  {orderDetail.amount}
+                  {orderData.amount}
                 </Text>
               </View>
             </Animated.View>
@@ -245,7 +286,7 @@ const Order = ({ navigation, route }) => {
           <View style={styles.recipientSubContainer}>
             <Icon name="bag-handle-outline" size={SF(24)} color={'#1332D0'} />
             <View style={styles.recipientSubContainerText}>
-              <Text style={styles.recipientName}>{orderDetail?.name}</Text>
+              <Text style={styles.recipientName}>{orderData?.name}</Text>
               <View style={styles.duration}>
                 {distance > 0 ? (
                   <Text style={styles.distance}>
@@ -281,7 +322,10 @@ const Order = ({ navigation, route }) => {
               </View>
             </View>
           </View>
-          <TouchableOpacity style={styles.callContainer}>
+          <TouchableOpacity
+            style={styles.callContainer}
+            onPress={() => Linking.openURL(`tel:${orderDetail.mobileNumber}`)}
+          >
             <Icon name="call-sharp" size={SF(19)} color={'white'} />
           </TouchableOpacity>
         </View>
@@ -343,16 +387,66 @@ const Order = ({ navigation, route }) => {
             <View style={styles.pickupSubContainerText}>
               <Text style={styles.pickupName}>Home</Text>
               <View style={styles.duration}>
-                <Text style={styles.pickupAddress}>{orderDetail.address}</Text>
+                <Text style={styles.pickupAddress}>{orderData.address}</Text>
               </View>
             </View>
           </View>
         </View>
-        {distance > 0 && (
+        <View
+          style={{
+            display: 'flex',
+            flexDirection: 'row',
+            marginHorizontal: SW(37),
+            gap: SW(8),
+            alignItems: 'center',
+            marginTop: SH(15),
+          }}
+        >
+          <SwitchToggle
+            switchOn={isEnabled}
+            onPress={() => setIsEnabled(!isEnabled)}
+            containerStyle={{
+              width: SF(55),
+              height: SF(30),
+              borderRadius: SF(30),
+              padding: SF(4),
+            }}
+            circleStyle={{
+              width: SF(25),
+              height: SF(25),
+              borderRadius: SF(25),
+            }}
+            circleColorOn="rgba(255, 255, 255, 1)"
+            circleColorOff="rgba(255, 255, 255, 1)"
+            backgroundColorOn="rgba(50, 173, 230, 1)"
+          />
+          <Text
+            style={{
+              color: 'rgba(85, 84, 84, 1)',
+              fontWeight: 600,
+              fontSize: SF(18),
+            }}
+          >
+            Cash On Delivery
+          </Text>
+
+          <Text
+            style={{
+              color: 'rgba(85, 84, 84, 1)',
+              fontWeight: 800,
+              fontSize: SF(20),
+            }}
+          >
+            {orderData.amount}
+          </Text>
+        </View>
+        {orderData.status !== 'Delivered' && distance > 0 && (
           <TouchableOpacity
-            onPress={
-              orderDetail.status === 'Delivered' ? handleNavigate : () => {}
-            }
+            onPress={() => {
+              orderData.status === 'Picked Up'
+                ? handleNavigate(orderType[orderData.status].statusChange)
+                : handleChangeStatus(orderType[orderData.status].statusChange);
+            }}
             style={styles.orderSwipeContainer}
           >
             <View style={styles.orderArrowContainer}>
@@ -363,7 +457,7 @@ const Order = ({ navigation, route }) => {
               />
             </View>
             <Text style={styles.orderSwipeText}>
-              {orderType[orderDetail.status]}
+              {orderType[orderData.status].text}
             </Text>
             <Text></Text>
           </TouchableOpacity>
@@ -570,7 +664,7 @@ const styles = StyleSheet.create({
     borderRadius: SF(70),
     marginBottom: SH(28),
     marginHorizontal: SW(35),
-    marginTop: SH(33),
+    marginTop: SH(9),
   },
   orderArrowContainer: {
     width: SF(35),

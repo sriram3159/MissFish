@@ -20,8 +20,7 @@ import MapViewDirections from 'react-native-maps-directions';
 import {} from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
 import { useGlobalContext } from '../contexts/globalContext';
-
-const GOOGLE_MAPS_APIKEY = 'AIzaSyAY2dJykSYpx-o7UgVHP5X_CfyyPm-UvOY';
+import { GOOGLE_MAPS_APIKEY } from '@env';
 
 const orderStatusColor = {
   Delivered: {
@@ -35,6 +34,10 @@ const orderStatusColor = {
   ['Pickup Pending']: {
     color: '#FF5963',
     backgroundColor: 'rgba(255, 89, 99, 0.2)',
+  },
+  ['Picked Up']: {
+    color: 'rgba(0, 102, 255, 1)', // strong blue
+    backgroundColor: 'rgba(0, 102, 255, 0.2)', // light transparent blue
   },
 };
 const paidStatusColor = {
