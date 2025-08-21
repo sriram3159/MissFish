@@ -287,13 +287,31 @@ export const initialState = {
       location: { latitude: 8.3913, longitude: 77.2582 },
     },
   ],
+  orderNav: [],
+  todayIncompleteOrder: [],
+  todayCompleteOrder: [],
+  report: null,
+  ongoingOrder: [],
 };
 
 export const GlobalReducer = (state, action) => {
   switch (action.type) {
-    case 'SET_USER': {
+    case 'SET_USER':
       return { ...state, user: action.payload };
-    }
+
+    case 'SET_TODAY_INCOMPLETE_ORDER':
+      return { ...state, todayIncompleteOrder: action.payload };
+
+    case 'SET_ONGOING_ORDER':
+      return { ...state, ongoingOrder: action.payload };
+
+    case 'SET_TODAY_COMPLETE_ORDER':
+      return { ...state, todayCompleteOrder: action.payload };
+    case 'SET_REPORT':
+      return { ...state, report: action.payload };
+    case 'SET_ORDER_NAV':
+      return { ...state, orderNav: action.payload };
+
     case 'SET_THEME':
       return { ...state, theme: action.payload };
     case 'LOGOUT':

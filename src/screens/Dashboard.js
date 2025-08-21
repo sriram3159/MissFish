@@ -22,30 +22,110 @@ import Geolocation from '@react-native-community/geolocation';
 import { useGlobalContext } from '../contexts/globalContext';
 import { GOOGLE_MAPS_APIKEY } from '@env';
 
+// const orderStatusColor = {
+//   Delivered: {
+//     color: 'rgba(0, 123, 59, 1)',
+//     backgroundColor: 'rgba(106, 255, 89, 0.2)',
+//   },
+//   ['Order inprogress']: {
+//     color: 'rgba(187, 153, 0, 1)',
+//     backgroundColor: 'rgba(255, 225, 89, 0.2)',
+//   },
+//   ['Pickup Pending']: {
+//     color: '#FF5963',
+//     backgroundColor: 'rgba(255, 89, 99, 0.2)',
+//   },
+//   ['Picked Up']: {
+//     color: 'rgba(0, 102, 255, 1)', // strong blue
+//     backgroundColor: 'rgba(0, 102, 255, 0.2)', // light transparent blue
+//   },
+// };
+
+const order_statuses = [
+  { id: 1, title: 'Pending' },
+  { id: 2, title: 'Order Accepted' },
+  { id: 3, title: 'Processing' },
+  { id: 4, title: 'Ready' },
+  { id: 5, title: 'Shipped' },
+  { id: 6, title: 'Order is Picked Up' },
+  { id: 7, title: 'Delivered' },
+  { id: 8, title: 'Request to Cancel' },
+  { id: 9, title: 'Cancelled' },
+  { id: 10, title: 'Declined' },
+];
+
+// color mapping (use exact titles from order_statuses)
 const orderStatusColor = {
+  Pending: {
+    color: '#BB9900',
+    backgroundColor: 'rgba(255, 225, 89, 0.2)',
+  },
+  'Order Accepted': {
+    color: '#0066FF',
+    backgroundColor: 'rgba(0, 102, 255, 0.2)',
+  },
+  Processing: {
+    color: '#BB9900',
+    backgroundColor: 'rgba(255, 225, 89, 0.2)',
+  },
+  Ready: {
+    color: '#FF9900',
+    backgroundColor: 'rgba(255, 165, 0, 0.2)',
+  },
+  Shipped: {
+    color: '#FF5963',
+    backgroundColor: 'rgba(255, 89, 99, 0.2)',
+  },
+  'Order is Picked Up': {
+    color: '#0066FF',
+    backgroundColor: 'rgba(0, 102, 255, 0.2)',
+  },
   Delivered: {
     color: 'rgba(0, 123, 59, 1)',
     backgroundColor: 'rgba(106, 255, 89, 0.2)',
   },
-  ['Order inprogress']: {
-    color: 'rgba(187, 153, 0, 1)',
-    backgroundColor: 'rgba(255, 225, 89, 0.2)',
+  'Request to Cancel': {
+    color: '#FF0000',
+    backgroundColor: 'rgba(255, 0, 0, 0.2)',
   },
-  ['Pickup Pending']: {
-    color: '#FF5963',
-    backgroundColor: 'rgba(255, 89, 99, 0.2)',
+  Cancelled: {
+    color: '#888',
+    backgroundColor: 'rgba(200, 200, 200, 0.2)',
   },
-  ['Picked Up']: {
-    color: 'rgba(0, 102, 255, 1)', // strong blue
-    backgroundColor: 'rgba(0, 102, 255, 0.2)', // light transparent blue
+  Declined: {
+    color: '#444',
+    backgroundColor: 'rgba(150, 150, 150, 0.2)',
   },
 };
+
+// helper function: get color based on numeric status code
+const getOrderStatusStyle = statusCode => {
+  const statusObj = order_statuses.find(s => s.id === statusCode);
+  if (!statusObj) return { color: '#000', backgroundColor: '#eee' }; // default
+  return (
+    orderStatusColor[statusObj.title] || {
+      color: '#000',
+      backgroundColor: '#eee',
+    }
+  );
+};
+// helper function: get color based on numeric status code
+const getOrderStatus = statusCode => {
+  const statusObj = order_statuses.find(s => s.id === statusCode);
+  return statusObj.title;
+};
+// helper function: get color based on numeric status code
+const getPaymentStatus = statusCode => {
+  const statusObj = order_statuses.find(s => s.id === statusCode);
+  return statusObj.title;
+};
+
 const paidStatusColor = {
-  Paid: {
+  captured: {
     color: 'rgba(0, 123, 59, 1)',
     backgroundColor: 'rgba(106, 255, 89, 0.2)',
   },
-  ['Not Paid']: {
+  ['pending']: {
     color: '#000000',
     backgroundColor: 'rgba(199, 199, 199, 0.2)',
   },
@@ -63,21 +143,21 @@ const OrderCard = ({ orderDetail, handleNavigate, origin }) => (
         alignItems: 'center',
       }}
     >
-      <Text style={styles.orderId}>Order ID: #{orderDetail.orderId}</Text>
+      <Text style={styles.orderId}>Order ID: #{orderDetail.id}</Text>
       <Text
         style={{
-          color: `${orderStatusColor[orderDetail.status]?.color}`,
+          color: `${getOrderStatusStyle(orderDetail.status)?.color}`,
           fontWeight: 700,
           fontSize: SF(14),
           backgroundColor: `${
-            orderStatusColor[orderDetail.status]?.backgroundColor
+            getOrderStatusStyle(orderDetail.status)?.backgroundColor
           }`,
           paddingVertical: SH(3),
           paddingHorizontal: SW(8),
           borderRadius: SF(6),
         }}
       >
-        {orderDetail.status}
+        {getOrderStatus(orderDetail.status)}
       </Text>
     </View>
 
@@ -115,9 +195,11 @@ const OrderCard = ({ orderDetail, handleNavigate, origin }) => (
           )}
         </View>
         <View style={styles.pickupSubContainerText}>
-          <Text style={styles.pickupName}>{orderDetail.name}</Text>
+          <Text style={styles.pickupName}>{orderDetail?.customer?.name}</Text>
           <View style={styles.duration}>
-            <Text style={styles.pickupAddress}>{orderDetail.address}</Text>
+            <Text style={styles.pickupAddress}>
+              {orderDetail?.contact_details?.meta?.address}
+            </Text>
           </View>
         </View>
       </View>
@@ -159,7 +241,7 @@ const OrderCard = ({ orderDetail, handleNavigate, origin }) => (
 
       <Text
         style={{
-          color: `${paidStatusColor[orderDetail.paidStatus]?.color}`,
+          color: `${paidStatusColor[orderDetail.payment.status]?.color}`,
           fontWeight: 700,
           fontSize: SF(14),
           backgroundColor: 'rgba(199, 199, 199, 0.2)',
@@ -168,7 +250,8 @@ const OrderCard = ({ orderDetail, handleNavigate, origin }) => (
           borderRadius: SF(4),
         }}
       >
-        {orderDetail.paidStatus} {orderDetail.amount}
+        {orderDetail.payment.status === 'pending' ? 'Not Paid' : 'Paid'} ₹{' '}
+        {orderDetail.payment.amount}
       </Text>
     </View>
     <Icon
@@ -179,6 +262,135 @@ const OrderCard = ({ orderDetail, handleNavigate, origin }) => (
     />
   </TouchableOpacity>
 );
+// const OrderCard = ({ orderDetail, handleNavigate, origin }) => (
+//   <TouchableOpacity
+//     onPress={() => handleNavigate(orderDetail)}
+//     style={styles.card}
+//   >
+//     <View
+//       style={{
+//         display: 'flex',
+//         flexDirection: 'row',
+//         justifyContent: 'space-between',
+//         alignItems: 'center',
+//       }}
+//     >
+//       <Text style={styles.orderId}>Order ID: #{orderDetail.orderId}</Text>
+//       <Text
+//         style={{
+//           color: `${orderStatusColor[orderDetail.status]?.color}`,
+//           fontWeight: 700,
+//           fontSize: SF(14),
+//           backgroundColor: `${
+//             orderStatusColor[orderDetail.status]?.backgroundColor
+//           }`,
+//           paddingVertical: SH(3),
+//           paddingHorizontal: SW(8),
+//           borderRadius: SF(6),
+//         }}
+//       >
+//         {orderDetail.status}
+//       </Text>
+//     </View>
+
+//     <View style={styles.dropContainer}>
+//       <View style={styles.pickupSubContainer}>
+//         <View
+//           style={{
+//             display: 'flex',
+//             flexDirection: 'column',
+//             gap: SH(5),
+//             alignItems: 'center',
+//           }}
+//         >
+//           <View style={styles.locationContainer}>
+//             <Icon name="location-outline" size={SF(14)} color={'white'} />
+//           </View>
+//           {origin && orderDetail.distance > 0 ? (
+//             <Text
+//               style={{ color: '#000000', fontWeight: '600', fontSize: SF(8) }}
+//             >
+//               {'['}
+//               {orderDetail.distance} KM
+//               {']'}
+//             </Text>
+//           ) : (
+//             <View
+//               style={{
+//                 width: SW(40),
+//                 height: SF(10),
+//                 borderRadius: SF(4),
+//                 backgroundColor: '#e0e0e0',
+//                 opacity: 0.5,
+//               }}
+//             />
+//           )}
+//         </View>
+//         <View style={styles.pickupSubContainerText}>
+//           <Text style={styles.pickupName}>{orderDetail.name}</Text>
+//           <View style={styles.duration}>
+//             <Text style={styles.pickupAddress}>{orderDetail.address}</Text>
+//           </View>
+//         </View>
+//       </View>
+//     </View>
+//     <View
+//       style={{
+//         display: 'flex',
+//         flexDirection: 'row',
+//         justifyContent: 'space-between',
+//         alignItems: 'center',
+//       }}
+//     >
+//       <View
+//         style={{
+//           display: 'flex',
+//           flexDirection: 'row',
+//           alignItems: 'center',
+//           gap: SW(3),
+//         }}
+//       >
+//         <Icon name="time-outline" size={SF(16)} color={'#1332D0'} />
+//         {fromLocation && orderDetail.duration > 0 ? (
+//           <Text style={styles.durationText}>
+//             {getTime(orderDetail.duration).current} -{' '}
+//             {getTime(orderDetail.duration).extra}
+//           </Text>
+//         ) : (
+//           <View
+//             style={{
+//               width: SW(120),
+//               height: SF(20),
+//               borderRadius: SF(4),
+//               backgroundColor: '#e0e0e0',
+//               opacity: 0.5,
+//             }}
+//           />
+//         )}
+//       </View>
+
+//       <Text
+//         style={{
+//           color: `${paidStatusColor[orderDetail.paidStatus]?.color}`,
+//           fontWeight: 700,
+//           fontSize: SF(14),
+//           backgroundColor: 'rgba(199, 199, 199, 0.2)',
+//           paddingVertical: SH(3),
+//           paddingHorizontal: SW(4),
+//           borderRadius: SF(4),
+//         }}
+//       >
+//         {orderDetail.paidStatus} {orderDetail.amount}
+//       </Text>
+//     </View>
+//     <Icon
+//       name="chevron-down-sharp"
+//       color="rgba(255, 89, 99, 1)"
+//       size={SF(20)}
+//       style={{ textAlign: 'center' }}
+//     />
+//   </TouchableOpacity>
+// );
 
 const fromLocation = {
   latitude: 8.094902240100733,
@@ -187,12 +399,20 @@ const fromLocation = {
 
 const Dashboard = ({ navigation }) => {
   const { state, dispatch } = useGlobalContext();
+  const { todayIncompleteOrder, todayCompleteOrder, orderNav, ongoingOrder } =
+    state;
+
   const orderDetails = state?.orderDetails;
+  console.log(ongoingOrder);
+
   const mapRef = useRef(null);
   useEffect(() => {
     console.log(state.orderDetails);
   }, [state]);
 
+  useEffect(() => {
+    console.log(orderNav);
+  }, [orderNav]);
   const stateRef = useRef(state);
 
   useEffect(() => {
@@ -257,6 +477,36 @@ const Dashboard = ({ navigation }) => {
     });
   }, []);
 
+  const handleDirectionsReady_2 = useCallback(
+    (result, index) => {
+      console.log('Directions result:', result);
+      console.log('Index:', index);
+      console.log('Current stateRef:', stateRef.current);
+      console.log(orderNav);
+
+      const updatedOrders = stateRef.current?.orderNav?.map((order, i) => {
+        console.log('Order in loop:', order, 'i:', i); // <-- should fire if array exists
+        return i === index
+          ? { ...order, distance: result.distance, duration: result.duration }
+          : order;
+      });
+      console.log(updatedOrders);
+
+      if (updatedOrders) {
+        dispatch({
+          type: 'SET_ORDER_NAV',
+          payload: updatedOrders,
+        });
+      }
+
+      mapRef.current?.fitToCoordinates(result.coordinates, {
+        edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
+        animated: true,
+      });
+    },
+    [], // don’t depend on `orderNav` if you're using stateRef
+  );
+
   const [isOnGoing, setisOnGoing] = useState(true);
   const [origin, setOrigin] = useState(null);
 
@@ -273,6 +523,14 @@ const Dashboard = ({ navigation }) => {
       setisOnGoing(false);
     }
   };
+  useEffect(() => {
+    if (ongoingOrder?.length > 0) {
+      dispatch({
+        type: 'SET_ORDER_NAV',
+        payload: ongoingOrder,
+      });
+    }
+  }, [ongoingOrder]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -488,11 +746,12 @@ const Dashboard = ({ navigation }) => {
                     paddingLeft: SW(5),
                   }}
                 >
-                  {
+                  {/* {
                     orderDetails?.filter(
                       item => item.status === 'Pickup Pending',
                     ).length
-                  }
+                  } */}
+                  {(todayIncompleteOrder?.pending_order_details).length}
                 </Text>
 
                 <View
@@ -555,11 +814,12 @@ const Dashboard = ({ navigation }) => {
                     paddingLeft: SW(5),
                   }}
                 >
-                  {
+                  {todayIncompleteOrder?.upcoming_order_details?.length}
+                  {/* {
                     orderDetails?.filter(
                       item => item.status === 'Order inprogress',
                     ).length
-                  }
+                  } */}
                 </Text>
 
                 <View
@@ -653,6 +913,21 @@ const Dashboard = ({ navigation }) => {
           </View>
           <View>
             <FlatList
+              data={orderNav.filter(items =>
+                !isOnGoing ? items.status === 7 : items.status !== 7,
+              )}
+              keyExtractor={item => item.orderId}
+              renderItem={({ item }) => (
+                <OrderCard
+                  orderDetail={item}
+                  handleNavigate={handleNavigate}
+                  origin={fromLocation}
+                />
+              )}
+              contentContainerStyle={styles.orderContainer}
+              showsVerticalScrollIndicator={false}
+            />
+            {/* <FlatList
               data={orderDetails.filter(items =>
                 !isOnGoing
                   ? items.status === 'Delivered'
@@ -668,7 +943,7 @@ const Dashboard = ({ navigation }) => {
               )}
               contentContainerStyle={styles.orderContainer}
               showsVerticalScrollIndicator={false}
-            />
+            /> */}
           </View>
         </View>
         {fromLocation &&
@@ -682,6 +957,22 @@ const Dashboard = ({ navigation }) => {
               strokeColor="#FF0000"
               mode="DRIVING"
               onReady={result => handleDirectionsReady(result, index)}
+              onError={error =>
+                console.log('Directions error at index', index, error)
+              }
+            />
+          ))}
+        {ongoingOrder &&
+          ongoingOrder?.map((order, index) => (
+            <MapViewDirections
+              key={order.id}
+              origin={fromLocation}
+              destination={order.location.customer_location}
+              apikey={GOOGLE_MAPS_APIKEY}
+              strokeWidth={2}
+              strokeColor="#FF0000"
+              mode="DRIVING"
+              onReady={result => handleDirectionsReady_2(result, index)}
               onError={error =>
                 console.log('Directions error at index', index, error)
               }

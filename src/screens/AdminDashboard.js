@@ -1,5 +1,5 @@
 import {
-  SafeAreaView,
+  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
@@ -13,9 +13,18 @@ import LinearGradient from 'react-native-linear-gradient';
 import { useState } from 'react';
 import DropdownMenu from '../components/commonComponent/DropdownMenu';
 import PieCharts from '../components/commonComponent/PieChart';
+import AreaCharts from '../components/commonComponent/AreaCharts';
 
-const AdminDashboard = ({ navigation }) => {
+const AdminDashboard = ({
+  navigation,
+  showOrderScreen,
+  setShowOrderScreen,
+}) => {
   const [selected, setSelected] = useState('Daily');
+  const handleShowOrders = () => {
+    setShowOrderScreen(!showOrderScreen);
+  };
+
   const options = [
     { label: 'Daily', value: 'Daily' },
     { label: 'Weekly', value: 'Weekly' },
@@ -25,14 +34,7 @@ const AdminDashboard = ({ navigation }) => {
     navigation.navigate('Reports');
   };
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Add translucent status bar */}
-      <StatusBar
-        translucent={false}
-        backgroundColor="rgba(245, 246, 251, 1)" // or your gradient start color
-        barStyle="dark-content" // or "light-content" based on your theme
-      />
-
+    <ScrollView>
       <View style={styles.scrollContent}>
         <View style={styles.innerContainer}>
           <View
@@ -97,7 +99,7 @@ const AdminDashboard = ({ navigation }) => {
             <Icon name="bell" color="rgba(50, 173, 230, 1)" size={SF(20)} />
           </TouchableOpacity>
         </View>
-        <View style={{ marginTop: SH(24) }}>
+        <View style={{ marginTop: SH(24), gap: SH(12) }}>
           <View
             style={{
               width: '100%',
@@ -118,24 +120,26 @@ const AdminDashboard = ({ navigation }) => {
                 paddingLeft: SW(16),
               }}
             >
-              <Text
-                style={{
-                  fontSize: SF(53),
-                  fontWeight: 700,
-                  color: 'rgba(50, 52, 62, 1)',
-                }}
-              >
-                20
-              </Text>
-              <Text
-                style={{
-                  fontSize: SF(13),
-                  fontWeight: 700,
-                  color: 'rgba(131, 135, 153, 1)',
-                }}
-              >
-                RUNNING ORDERS
-              </Text>
+              <TouchableOpacity onPress={handleShowOrders}>
+                <Text
+                  style={{
+                    fontSize: SF(53),
+                    fontWeight: 700,
+                    color: 'rgba(50, 52, 62, 1)',
+                  }}
+                >
+                  20
+                </Text>
+                <Text
+                  style={{
+                    fontSize: SF(13),
+                    fontWeight: 700,
+                    color: 'rgba(131, 135, 153, 1)',
+                  }}
+                >
+                  RUNNING ORDERS
+                </Text>
+              </TouchableOpacity>
             </LinearGradient>
             <LinearGradient
               colors={['#FFFFFF', '#D4F5FC']}
@@ -165,12 +169,26 @@ const AdminDashboard = ({ navigation }) => {
                   color: 'rgba(131, 135, 153, 1)',
                 }}
               >
-                Order Request
+                ORDER REQUEST
               </Text>
             </LinearGradient>
           </View>
-          <View>
-            <View>
+          <View
+            style={{
+              paddingHorizontal: SW(16),
+              backgroundColor: 'rgba(255, 255, 255, 1)',
+              borderRadius: SF(20),
+              paddingTop: SH(11),
+              paddingBottom: SH(27),
+            }}
+          >
+            <View
+              style={{
+                display: 'flex',
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+              }}
+            >
               <View>
                 <Text
                   style={{
@@ -199,21 +217,185 @@ const AdminDashboard = ({ navigation }) => {
             </View>
             <PieCharts />
           </View>
-          <View></View>
-          <View></View>
+          <View
+            style={{
+              paddingHorizontal: SW(16),
+              backgroundColor: 'rgba(255, 255, 255, 1)',
+              borderRadius: SF(20),
+              paddingTop: SH(11),
+              paddingBottom: SH(27),
+            }}
+          >
+            <View
+              style={{
+                display: 'flex',
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+              }}
+            >
+              <View>
+                <Text
+                  style={{
+                    color: 'rgba(50, 52, 62, 1)',
+                    fontSize: SF(14),
+                    fontWeight: 700,
+                  }}
+                >
+                  Total Revenue
+                </Text>
+                <Text
+                  style={{
+                    color: 'rgba(50, 52, 62, 1)',
+                    fontSize: SF(34),
+                    fontWeight: 700,
+                  }}
+                >
+                  ₹ 2,241
+                </Text>
+              </View>
+              <DropdownMenu
+                options={options}
+                onSelect={value => setSelected(value)}
+                label={selected}
+              />
+            </View>
+            <AreaCharts />
+          </View>
+          <View
+            style={{
+              padding: SW(16),
+              backgroundColor: 'rgba(255, 255, 255, 1)',
+              borderRadius: SF(20),
+              paddingTop: SH(14),
+            }}
+          >
+            <View
+              style={{
+                display: 'flex',
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+              }}
+            >
+              <Text
+                style={{
+                  fontWeight: 700,
+                  fontSize: SF(14),
+                  color: 'rgba(50, 52, 62, 1)',
+                }}
+              >
+                Reviews
+              </Text>
+              <Text
+                style={{
+                  fontWeight: 700,
+                  fontSize: SF(14),
+                  color: 'rgba(50, 173, 230, 1)',
+                  textDecorationStyle: 'solid',
+                  textDecorationColor: 'rgba(50, 173, 230, 1)',
+                  textDecorationLine: 'underline',
+                }}
+              >
+                See All
+              </Text>
+            </View>
+            <View
+              style={{
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'baseline',
+                paddingTop: SH(32),
+              }}
+            >
+              <MaterialIcon
+                name="star-rate"
+                color="rgba(251, 109, 58, 1)"
+                size={SF(25)}
+              />
+              <Text
+                style={{
+                  paddingLeft: SW(5),
+                  fontWeight: 700,
+                  fontSize: SF(23),
+                  color: 'rgba(50, 173, 230, 1)',
+                }}
+              >
+                4.9
+              </Text>
+              <Text
+                style={{
+                  paddingLeft: SW(5),
+                  fontWeight: 700,
+                  fontSize: SF(14),
+                  color: 'rgba(50, 52, 62, 1)',
+                }}
+              >
+                Total 20 Reviews
+              </Text>
+            </View>
+          </View>
+          <View
+            style={{
+              padding: SW(16),
+              backgroundColor: 'rgba(255, 255, 255, 1)',
+              borderRadius: SF(20),
+              paddingTop: SH(14),
+            }}
+          >
+            <View
+              style={{
+                display: 'flex',
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+              }}
+            >
+              <Text
+                style={{
+                  fontWeight: 700,
+                  fontSize: SF(14),
+                  color: 'rgba(50, 52, 62, 1)',
+                }}
+              >
+                Populer Items This Weeks
+              </Text>
+              <Text
+                style={{
+                  fontWeight: 700,
+                  fontSize: SF(14),
+                  color: 'rgba(50, 173, 230, 1)',
+                  textDecorationStyle: 'solid',
+                  textDecorationColor: 'rgba(50, 173, 230, 1)',
+                  textDecorationLine: 'underline',
+                }}
+              >
+                See All
+              </Text>
+            </View>
+            <View
+              style={{
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'baseline',
+                paddingTop: SH(32),
+              }}
+            >
+              <View style={styles.gridContainer}>
+                {[...Array(8)].map((item, index) => (
+                  <View key={index} style={styles.gridItem}>
+                    <Text></Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          </View>
           <View></View>
         </View>
       </View>
-    </SafeAreaView>
+    </ScrollView>
   );
 };
 export default AdminDashboard;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: 'rgba(245, 246, 251, 1)',
-  },
   scrollContent: {
     paddingBottom: SF(20),
     marginHorizontal: SW(24),
@@ -253,5 +435,26 @@ const styles = StyleSheet.create({
     height: 2,
     backgroundColor: 'rgba(24, 28, 46, 1)',
     borderRadius: 1,
+  },
+  gridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  gridItem: {
+    width: SW(151),
+    height: SW(151),
+    marginBottom: SF(8),
+    backgroundColor: '#eaeaea',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: SF(18),
+  },
+  showOrderButton: {
+    backgroundColor: 'rgba(50, 173, 230, 1)',
+    padding: 10,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginVertical: SH(10),
   },
 });

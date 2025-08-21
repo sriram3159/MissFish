@@ -1,5 +1,3 @@
-import React from 'react';
-
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { NavigationContainer } from '@react-navigation/native';
 import HomeScreen from '../screens/HomeScreen';
@@ -9,7 +7,7 @@ import Order from '../screens/Order';
 import Dashboard from '../screens/Dashboard';
 import orderDelivered from '../screens/OrderDelivered';
 import Reports from '../screens/Reports';
-import AdminDashboard from '../screens/AdminDashboard';
+import AdminLayout from '../screens/AdminLayout';
 
 const Stack = createNativeStackNavigator();
 
@@ -58,7 +56,7 @@ const AppNavigator = () => {
           />
           <Stack.Screen
             name="AdminDashboard"
-            component={AdminDashboard}
+            component={AdminLayout}
             options={{ title: 'AdminDashboard' }}
           />
         </Stack.Navigator>

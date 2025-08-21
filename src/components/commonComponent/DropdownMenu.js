@@ -47,7 +47,6 @@ const DropdownMenu = ({ options = [], onSelect, label = 'Daily' }) => {
 const styles = StyleSheet.create({
   container: {
     alignItems: 'flex-end',
-    margin: SW(10),
   },
   button: {
     borderColor: 'rgba(232, 234, 237, 1)',

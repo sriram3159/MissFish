@@ -1,6 +1,6 @@
 import { Text, View } from 'react-native';
 import { PieChart } from 'react-native-gifted-charts';
-import { SF } from '../../utils/dimensions';
+import { SF, SH, SW } from '../../utils/dimensions';
 
 const PieCharts = () => {
   const pieData = [
@@ -26,11 +26,11 @@ const PieCharts = () => {
     return (
       <View
         style={{
-          height: 10,
-          width: 10,
-          borderRadius: 5,
+          height: SF(8),
+          width: SF(8),
+          borderRadius: SF(4),
           backgroundColor: color,
-          marginRight: 10,
+          marginRight: SW(7),
         }}
       />
     );
@@ -41,46 +41,146 @@ const PieCharts = () => {
       <>
         <View
           style={{
-            flexDirection: 'row',
+            flexDirection: 'column',
             justifyContent: 'center',
-            marginBottom: 10,
+            gap: SH(30),
+            flex: 1,
           }}
         >
           <View
             style={{
+              display: 'flex',
               flexDirection: 'row',
-              alignItems: 'center',
-              width: 120,
-              marginRight: 20,
+              justifyContent: 'space-between',
             }}
           >
-            {renderDot('#006DFF')}
-            <Text style={{ color: 'white' }}>Excellent: 47%</Text>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+              }}
+            >
+              {renderDot('rgba(255, 156, 69, 1)')}
+              <Text
+                style={{
+                  color: 'rgba(142, 149, 169, 1)',
+                  fontWeight: 700,
+                  fontSize: SF(12),
+                }}
+              >
+                Delivered
+              </Text>
+            </View>
+            <View style={{ display: 'flex', flexDirection: 'row', gap: SW(9) }}>
+              <Text
+                style={{
+                  color: 'rgba(28, 42, 83, 1)',
+                  fontWeight: 700,
+                  fontSize: SF(14),
+                }}
+              >
+                24
+              </Text>
+              <Text
+                style={{
+                  color: 'rgba(255, 156, 69, 1)',
+                  fontWeight: 700,
+                  fontSize: SF(14),
+                }}
+              >
+                (64%)
+              </Text>
+            </View>
           </View>
-          <View
-            style={{ flexDirection: 'row', alignItems: 'center', width: 120 }}
-          >
-            {renderDot('#8F80F3')}
-            <Text style={{ color: 'white' }}>Okay: 16%</Text>
-          </View>
-        </View>
-        <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
           <View
             style={{
+              display: 'flex',
               flexDirection: 'row',
-              alignItems: 'center',
-              width: 120,
-              marginRight: 20,
+              justifyContent: 'space-between',
             }}
           >
-            {renderDot('#3BE9DE')}
-            <Text style={{ color: 'white' }}>Good: 40%</Text>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+              }}
+            >
+              {renderDot('rgba(5, 200, 15, 1)')}
+              <Text
+                style={{
+                  color: 'rgba(142, 149, 169, 1)',
+                  fontWeight: 700,
+                  fontSize: SF(12),
+                }}
+              >
+                Processing
+              </Text>
+            </View>
+            <View style={{ display: 'flex', flexDirection: 'row', gap: SW(9) }}>
+              <Text
+                style={{
+                  color: 'rgba(28, 42, 83, 1)',
+                  fontWeight: 700,
+                  fontSize: SF(14),
+                }}
+              >
+                24
+              </Text>
+              <Text
+                style={{
+                  color: 'rgba(5, 200, 15, 1)',
+                  fontWeight: 700,
+                  fontSize: SF(14),
+                }}
+              >
+                (26%)
+              </Text>
+            </View>
           </View>
           <View
-            style={{ flexDirection: 'row', alignItems: 'center', width: 120 }}
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+            }}
           >
-            {renderDot('#FF7F97')}
-            <Text style={{ color: 'white' }}>Poor: 3%</Text>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+              }}
+            >
+              {renderDot('rgba(186, 11, 11, 1)')}
+              <Text
+                style={{
+                  color: 'rgba(142, 149, 169, 1)',
+                  fontWeight: 700,
+                  fontSize: SF(12),
+                }}
+              >
+                Canceled
+              </Text>
+            </View>
+            <View style={{ display: 'flex', flexDirection: 'row', gap: SW(9) }}>
+              <Text
+                style={{
+                  color: 'rgba(28, 42, 83, 1)',
+                  fontWeight: 700,
+                  fontSize: SF(14),
+                }}
+              >
+                24
+              </Text>
+              <Text
+                style={{
+                  color: 'rgba(186, 11, 11, 1)',
+                  fontWeight: 700,
+                  fontSize: SF(14),
+                }}
+              >
+                (10%)
+              </Text>
+            </View>
           </View>
         </View>
       </>
@@ -88,14 +188,20 @@ const PieCharts = () => {
   };
 
   return (
-    <View style={{ padding: 20, alignItems: 'center' }}>
+    <View
+      style={{
+        alignItems: 'center',
+        display: 'flex',
+        flexDirection: 'row',
+      }}
+    >
       <PieChart
         data={pieData}
         donut
         showGradient
         sectionAutoFocus
-        radius={SF(100)}
-        innerRadius={SF(65)}
+        radius={SF(60)}
+        innerRadius={SF(40)}
         // innerCircleColor={'#232B5D'}
         centerLabelComponent={() => {
           return (

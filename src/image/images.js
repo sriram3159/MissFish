@@ -9,6 +9,10 @@ const images = {
   orderDelivered: require('./orderDelivered.webp'),
   data: require('./data.webp'),
   bike: require('./Bike.webp'),
+  fish: require('./Fish.webp'),
+  delivery: require('./Delivery.webp'),
+  person: require('./person.webp'),
+  fssai: require('./fssai.webp'),
 };
 
 export default images;
