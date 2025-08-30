@@ -10,13 +10,14 @@ import {
 import colorsset from '../utils/colors';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { SF, SH, SW } from '../utils/dimensions';
-import { useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { postRequest } from '../services/apiService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AuthContext } from '../contexts/AuthContext';
 
 const OtpVerify = ({ navigation, route }) => {
   const { mobileNumber } = route.params;
-  console.log(mobileNumber);
+  const { login } = useContext(AuthContext);
 
   const [otpNumber, setOtpNumer] = useState(Array(6).fill(''));
   const [showError, setShowError] = useState(false);
@@ -39,20 +40,24 @@ const OtpVerify = ({ navigation, route }) => {
   const handleNavigate = async () => {
     const isComplete = otpNumber.every(val => val !== '');
 
+    if (!isComplete) {
+      setShowError(true);
+      return;
+    }
+
     const data = await postRequest('/delivery-person/otp-verify', {
       phone: mobileNumber,
-      otp: 123456,
+      otp: otpNumber.join(''),
     });
+
     if (data.status === 'success') {
       setShowError(false);
-      if (otpNumber.join('') === '123456') {
-        navigation.navigate('Dashboard');
-      } else {
-        navigation.navigate('AdminDashboard');
-      }
-      console.log(data);
-      await AsyncStorage.setItem('accessToken', data.tokens.access);
-      await AsyncStorage.setItem('refreshToken', data.tokens.refresh);
+
+      // ✅ Save tokens via AuthContext (this will auto-switch navigator)
+      await login(data.tokens.access, data.tokens.refresh);
+
+      // ⚠️ Don't call navigation.navigate('Dashboard') here!
+      // The stack will automatically change because isLoggedIn = true
     } else {
       setShowError(true);
     }
@@ -87,7 +92,7 @@ const OtpVerify = ({ navigation, route }) => {
           <Text style={styles.otpVerify}>Enter OTP to Verify</Text>
           <View style={styles.otpSentContainer}>
             <Text style={styles.otpSentText}>OTP has been sent to </Text>
-            <Text style={styles.otpSentNumber}>+91 9999988888</Text>
+            <Text style={styles.otpSentNumber}>+91 {mobileNumber}</Text>
           </View>
           <Text style={styles.changeNo}>Change Phone number</Text>
           <Text style={styles.otpText}>Enter OTP Text</Text>
@@ -96,6 +101,7 @@ const OtpVerify = ({ navigation, route }) => {
               <View key={index} style={styles.otpNo}>
                 <TextInput
                   ref={ref => (inputRefs.current[index] = ref)}
+                  key={index}
                   style={styles.otpNoText}
                   value={otpNumber[index]}
                   onChangeText={text => onChangeText(text, index)}

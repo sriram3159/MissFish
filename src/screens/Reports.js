@@ -15,12 +15,12 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import images from '../image/images';
 import { useGlobalContext } from '../contexts/globalContext';
 import DateRangePicker from '../components/commonComponent/DateRangePicker';
-import { formatDate, formatTime } from '../utils/formatTime';
+import { formatDate, formatTime, formatDateNumeric } from '../utils/formatTime';
 import { useEffect, useState } from 'react';
 import colorsset from '../utils/colors';
 
 const Reports = ({ navigation }) => {
-  const { state, dispatch } = useGlobalContext();
+  const { state, dispatch, fetchReport } = useGlobalContext();
   const [fromDate, setFromDate] = useState(null);
   const [toDate, setToDate] = useState(null);
   const [filteredData, setfilteredData] = useState([]);
@@ -30,6 +30,17 @@ const Reports = ({ navigation }) => {
   const handleBack = () => {
     navigation.goBack();
   };
+
+  useEffect(() => {
+    console.log(formatDateNumeric(fromDate), formatDateNumeric(toDate));
+
+    fetchReport(formatDateNumeric(fromDate), formatDateNumeric(toDate));
+  }, [toDate]);
+
+  useEffect(() => {
+    console.log(state?.report);
+    console.log(state?.report?.order_details);
+  }, [state?.report]);
 
   const OrderCard = ({ orderDetail }) => {
     return (
@@ -62,7 +73,7 @@ const Reports = ({ navigation }) => {
               width: SW(38),
             }}
           >
-            #{orderDetail.orderId}
+            #{orderDetail.id}
           </Text>
           <View>
             <Text
@@ -72,7 +83,7 @@ const Reports = ({ navigation }) => {
                 fontWeight: 600,
               }}
             >
-              {formatDate(orderDetail.updatedAt)}
+              {formatDate(orderDetail.order_delivered_time)}
             </Text>
             <Text
               style={{
@@ -81,7 +92,7 @@ const Reports = ({ navigation }) => {
                 fontWeight: 600,
               }}
             >
-              {formatTime(orderDetail.updatedAt)}
+              {formatTime(orderDetail.order_delivered_time)}
             </Text>
           </View>
           <Text
@@ -101,7 +112,7 @@ const Reports = ({ navigation }) => {
               fontWeight: 600,
             }}
           >
-            {Number(orderDetail.distance).toFixed(2) || 0}
+            {Number(orderDetail.km).toFixed(2) || 0}
             KM
           </Text>
         </View>
@@ -193,7 +204,7 @@ const Reports = ({ navigation }) => {
           </View>
         ) : (
           <View>
-            {filteredData.length > 0 ? (
+            {state?.report?.order_details.length > 0 ? (
               <View>
                 <View
                   style={{
@@ -219,7 +230,7 @@ const Reports = ({ navigation }) => {
                       paddingLeft: SW(11),
                     }}
                   >
-                    12/Jun/2025 - 20/Jun/2025
+                    {formatDate(fromDate, 2)} - {formatDate(toDate, 2)}
                   </Text>
                   <View
                     style={{
@@ -262,7 +273,7 @@ const Reports = ({ navigation }) => {
                           fontSize: SF(17),
                         }}
                       >
-                        {filteredData.length} Orders
+                        {state?.report?.assigned_order_count} Orders
                       </Text>
                     </View>
                     <View
@@ -289,12 +300,7 @@ const Reports = ({ navigation }) => {
                           fontSize: SF(17),
                         }}
                       >
-                        {
-                          filteredData?.filter(
-                            item => item.status === 'Delivered',
-                          ).length
-                        }{' '}
-                        Orders
+                        {state?.report?.delivered_order_count} Orders
                       </Text>
                     </View>
                     <View
@@ -321,11 +327,7 @@ const Reports = ({ navigation }) => {
                           fontSize: SF(17),
                         }}
                       >
-                        {filteredData
-                          .filter(order => order.status === 'Delivered')
-                          .reduce((a, b) => a + b.distance, 0)
-                          .toFixed(2) || 0}{' '}
-                        KM
+                        {state?.report?.total_km} KM
                       </Text>
                     </View>
                   </View>
@@ -392,9 +394,11 @@ const Reports = ({ navigation }) => {
                 </View>
                 <View>
                   <FlatList
-                    data={filteredData}
+                    data={state?.report?.order_details}
                     keyExtractor={item => item.orderId}
-                    renderItem={({ item }) => <OrderCard orderDetail={item} />}
+                    renderItem={({ item }) => (
+                      <OrderCard orderDetail={item} key={item.id} />
+                    )}
                     contentContainerStyle={styles.orderContainer}
                     showsVerticalScrollIndicator={false}
                   />

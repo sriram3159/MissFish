@@ -8,19 +8,23 @@ import {
   Image,
   FlatList,
   PermissionsAndroid,
+  RefreshControl,
 } from 'react-native';
 import colorsset from '../utils/colors';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { SF, SH, SW } from '../utils/dimensions';
 import { TouchableOpacity } from 'react-native';
 import images from '../image/images';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import getTime from '../utils/timeConversion';
 import MapViewDirections from 'react-native-maps-directions';
 import {} from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
 import { useGlobalContext } from '../contexts/globalContext';
 import { GOOGLE_MAPS_APIKEY } from '@env';
+import getTimeDuration from '../utils/timeDurationConversion';
+import { logout } from '../services/apiService';
+import { AuthContext } from '../contexts/AuthContext';
 
 // const orderStatusColor = {
 //   Delivered: {
@@ -130,6 +134,7 @@ const paidStatusColor = {
     backgroundColor: 'rgba(199, 199, 199, 0.2)',
   },
 };
+
 const OrderCard = ({ orderDetail, handleNavigate, origin }) => (
   <TouchableOpacity
     onPress={() => handleNavigate(orderDetail)}
@@ -143,21 +148,29 @@ const OrderCard = ({ orderDetail, handleNavigate, origin }) => (
         alignItems: 'center',
       }}
     >
-      <Text style={styles.orderId}>Order ID: #{orderDetail.id}</Text>
+      <Text style={styles.orderId}>Order ID: #{orderDetail?.id}</Text>
       <Text
         style={{
-          color: `${getOrderStatusStyle(orderDetail.status)?.color}`,
+          color: `${
+            orderDetail?.delivery_details?.accept_status !== 3
+              ? getOrderStatusStyle(orderDetail?.status)?.color
+              : orderStatusColor['Request to Cancel']?.color
+          }`,
           fontWeight: 700,
           fontSize: SF(14),
           backgroundColor: `${
-            getOrderStatusStyle(orderDetail.status)?.backgroundColor
+            orderDetail?.delivery_details?.accept_status !== 3
+              ? getOrderStatusStyle(orderDetail?.status)?.backgroundColor
+              : orderStatusColor['Request to Cancel']?.backgroundColor
           }`,
           paddingVertical: SH(3),
           paddingHorizontal: SW(8),
           borderRadius: SF(6),
         }}
       >
-        {getOrderStatus(orderDetail.status)}
+        {orderDetail?.delivery_details?.accept_status !== 3
+          ? getOrderStatus(orderDetail?.status)
+          : 'Order Declined'}
       </Text>
     </View>
 
@@ -174,25 +187,14 @@ const OrderCard = ({ orderDetail, handleNavigate, origin }) => (
           <View style={styles.locationContainer}>
             <Icon name="location-outline" size={SF(14)} color={'white'} />
           </View>
-          {origin && orderDetail.distance > 0 ? (
-            <Text
-              style={{ color: '#000000', fontWeight: '600', fontSize: SF(8) }}
-            >
-              {'['}
-              {orderDetail.distance} KM
-              {']'}
-            </Text>
-          ) : (
-            <View
-              style={{
-                width: SW(40),
-                height: SF(10),
-                borderRadius: SF(4),
-                backgroundColor: '#e0e0e0',
-                opacity: 0.5,
-              }}
-            />
-          )}
+
+          <Text
+            style={{ color: '#000000', fontWeight: '600', fontSize: SF(8) }}
+          >
+            {'['}
+            {orderDetail?.location.total_km} KM
+            {']'}
+          </Text>
         </View>
         <View style={styles.pickupSubContainerText}>
           <Text style={styles.pickupName}>{orderDetail?.customer?.name}</Text>
@@ -221,27 +223,16 @@ const OrderCard = ({ orderDetail, handleNavigate, origin }) => (
         }}
       >
         <Icon name="time-outline" size={SF(16)} color={'#1332D0'} />
-        {fromLocation && orderDetail.duration > 0 ? (
-          <Text style={styles.durationText}>
-            {getTime(orderDetail.duration).current} -{' '}
-            {getTime(orderDetail.duration).extra}
-          </Text>
-        ) : (
-          <View
-            style={{
-              width: SW(120),
-              height: SF(20),
-              borderRadius: SF(4),
-              backgroundColor: '#e0e0e0',
-              opacity: 0.5,
-            }}
-          />
-        )}
+
+        <Text style={styles.durationText}>
+          {getTimeDuration(orderDetail?.delivery_expected_time).current} -{' '}
+          {getTimeDuration(orderDetail?.delivery_expected_time).extra}
+        </Text>
       </View>
 
       <Text
         style={{
-          color: `${paidStatusColor[orderDetail.payment.status]?.color}`,
+          color: `${paidStatusColor[orderDetail?.payment?.status]?.color}`,
           fontWeight: 700,
           fontSize: SF(14),
           backgroundColor: 'rgba(199, 199, 199, 0.2)',
@@ -250,8 +241,8 @@ const OrderCard = ({ orderDetail, handleNavigate, origin }) => (
           borderRadius: SF(4),
         }}
       >
-        {orderDetail.payment.status === 'pending' ? 'Not Paid' : 'Paid'} ₹{' '}
-        {orderDetail.payment.amount}
+        {orderDetail?.payment?.status === 'pending' ? 'Not Paid' : 'Paid'} ₹{' '}
+        {orderDetail?.payment?.amount}
       </Text>
     </View>
     <Icon
@@ -262,6 +253,8 @@ const OrderCard = ({ orderDetail, handleNavigate, origin }) => (
     />
   </TouchableOpacity>
 );
+
+// order card 2
 // const OrderCard = ({ orderDetail, handleNavigate, origin }) => (
 //   <TouchableOpacity
 //     onPress={() => handleNavigate(orderDetail)}
@@ -275,21 +268,29 @@ const OrderCard = ({ orderDetail, handleNavigate, origin }) => (
 //         alignItems: 'center',
 //       }}
 //     >
-//       <Text style={styles.orderId}>Order ID: #{orderDetail.orderId}</Text>
+//       <Text style={styles.orderId}>Order ID: #{orderDetail?.id}</Text>
 //       <Text
 //         style={{
-//           color: `${orderStatusColor[orderDetail.status]?.color}`,
+//           color: `${
+//             orderDetail?.delivery_details?.accept_status !== 3
+//               ? getOrderStatusStyle(orderDetail?.status)?.color
+//               : orderStatusColor['Request to Cancel']?.color
+//           }`,
 //           fontWeight: 700,
 //           fontSize: SF(14),
 //           backgroundColor: `${
-//             orderStatusColor[orderDetail.status]?.backgroundColor
+//             orderDetail?.delivery_details?.accept_status !== 3
+//               ? getOrderStatusStyle(orderDetail?.status)?.backgroundColor
+//               : orderStatusColor['Request to Cancel']?.backgroundColor
 //           }`,
 //           paddingVertical: SH(3),
 //           paddingHorizontal: SW(8),
 //           borderRadius: SF(6),
 //         }}
 //       >
-//         {orderDetail.status}
+//         {orderDetail?.delivery_details?.accept_status !== 3
+//           ? getOrderStatus(orderDetail?.status)
+//           : 'Order Declined'}
 //       </Text>
 //     </View>
 
@@ -306,12 +307,13 @@ const OrderCard = ({ orderDetail, handleNavigate, origin }) => (
 //           <View style={styles.locationContainer}>
 //             <Icon name="location-outline" size={SF(14)} color={'white'} />
 //           </View>
-//           {origin && orderDetail.distance > 0 ? (
+//           {origin && orderDetail?.distance > 0 ? (
 //             <Text
 //               style={{ color: '#000000', fontWeight: '600', fontSize: SF(8) }}
 //             >
 //               {'['}
-//               {orderDetail.distance} KM
+//               {/* {orderDetail?.distance} KM */}
+//               {orderDetail?.distance} KM
 //               {']'}
 //             </Text>
 //           ) : (
@@ -327,9 +329,11 @@ const OrderCard = ({ orderDetail, handleNavigate, origin }) => (
 //           )}
 //         </View>
 //         <View style={styles.pickupSubContainerText}>
-//           <Text style={styles.pickupName}>{orderDetail.name}</Text>
+//           <Text style={styles.pickupName}>{orderDetail?.customer?.name}</Text>
 //           <View style={styles.duration}>
-//             <Text style={styles.pickupAddress}>{orderDetail.address}</Text>
+//             <Text style={styles.pickupAddress}>
+//               {orderDetail?.contact_details?.meta?.address}
+//             </Text>
 //           </View>
 //         </View>
 //       </View>
@@ -351,10 +355,10 @@ const OrderCard = ({ orderDetail, handleNavigate, origin }) => (
 //         }}
 //       >
 //         <Icon name="time-outline" size={SF(16)} color={'#1332D0'} />
-//         {fromLocation && orderDetail.duration > 0 ? (
+//         {fromLocation && orderDetail?.duration > 0 ? (
 //           <Text style={styles.durationText}>
-//             {getTime(orderDetail.duration).current} -{' '}
-//             {getTime(orderDetail.duration).extra}
+//             {getTime(orderDetail?.duration).current} -{' '}
+//             {getTime(orderDetail?.duration).extra}
 //           </Text>
 //         ) : (
 //           <View
@@ -371,7 +375,7 @@ const OrderCard = ({ orderDetail, handleNavigate, origin }) => (
 
 //       <Text
 //         style={{
-//           color: `${paidStatusColor[orderDetail.paidStatus]?.color}`,
+//           color: `${paidStatusColor[orderDetail?.payment?.status]?.color}`,
 //           fontWeight: 700,
 //           fontSize: SF(14),
 //           backgroundColor: 'rgba(199, 199, 199, 0.2)',
@@ -380,7 +384,139 @@ const OrderCard = ({ orderDetail, handleNavigate, origin }) => (
 //           borderRadius: SF(4),
 //         }}
 //       >
-//         {orderDetail.paidStatus} {orderDetail.amount}
+//         {orderDetail?.payment?.status === 'pending' ? 'Not Paid' : 'Paid'} ₹{' '}
+//         {orderDetail?.payment?.amount}
+//       </Text>
+//     </View>
+//     <Icon
+//       name="chevron-down-sharp"
+//       color="rgba(255, 89, 99, 1)"
+//       size={SF(20)}
+//       style={{ textAlign: 'center' }}
+//     />
+//   </TouchableOpacity>
+// );
+
+// order card 1
+// const OrderCard = ({ orderDetail, handleNavigate, origin }) => (
+//   <TouchableOpacity
+//     onPress={() => handleNavigate(orderDetail)}
+//     style={styles.card}
+//   >
+//     <View
+//       style={{
+//         display: 'flex',
+//         flexDirection: 'row',
+//         justifyContent: 'space-between',
+//         alignItems: 'center',
+//       }}
+//     >
+//       <Text style={styles.orderId}>Order ID: #{orderDetail?.orderId}</Text>
+//       <Text
+//         style={{
+//           color: `${orderStatusColor[orderDetail?.status]?.color}`,
+//           fontWeight: 700,
+//           fontSize: SF(14),
+//           backgroundColor: `${
+//             orderStatusColor[orderDetail?.status]?.backgroundColor
+//           }`,
+//           paddingVertical: SH(3),
+//           paddingHorizontal: SW(8),
+//           borderRadius: SF(6),
+//         }}
+//       >
+//         {orderDetail?.status}
+//       </Text>
+//     </View>
+
+//     <View style={styles.dropContainer}>
+//       <View style={styles.pickupSubContainer}>
+//         <View
+//           style={{
+//             display: 'flex',
+//             flexDirection: 'column',
+//             gap: SH(5),
+//             alignItems: 'center',
+//           }}
+//         >
+//           <View style={styles.locationContainer}>
+//             <Icon name="location-outline" size={SF(14)} color={'white'} />
+//           </View>
+//           {origin && orderDetail?.distance > 0 ? (
+//             <Text
+//               style={{ color: '#000000', fontWeight: '600', fontSize: SF(8) }}
+//             >
+//               {'['}
+//               {orderDetail?.distance} KM
+//               {']'}
+//             </Text>
+//           ) : (
+//             <View
+//               style={{
+//                 width: SW(40),
+//                 height: SF(10),
+//                 borderRadius: SF(4),
+//                 backgroundColor: '#e0e0e0',
+//                 opacity: 0.5,
+//               }}
+//             />
+//           )}
+//         </View>
+//         <View style={styles.pickupSubContainerText}>
+//           <Text style={styles.pickupName}>{orderDetail?.name}</Text>
+//           <View style={styles.duration}>
+//             <Text style={styles.pickupAddress}>{orderDetail?.address}</Text>
+//           </View>
+//         </View>
+//       </View>
+//     </View>
+//     <View
+//       style={{
+//         display: 'flex',
+//         flexDirection: 'row',
+//         justifyContent: 'space-between',
+//         alignItems: 'center',
+//       }}
+//     >
+//       <View
+//         style={{
+//           display: 'flex',
+//           flexDirection: 'row',
+//           alignItems: 'center',
+//           gap: SW(3),
+//         }}
+//       >
+//         <Icon name="time-outline" size={SF(16)} color={'#1332D0'} />
+//         {fromLocation && orderDetail?.duration > 0 ? (
+//           <Text style={styles.durationText}>
+//             {getTime(orderDetail?.duration).current} -{' '}
+//             {getTime(orderDetail?.duration).extra}
+//           </Text>
+//         ) : (
+//           <View
+//             style={{
+//               width: SW(120),
+//               height: SF(20),
+//               borderRadius: SF(4),
+//               backgroundColor: '#e0e0e0',
+//               opacity: 0.5,
+//             }}
+//           />
+//         )}
+//       </View>
+
+//       <Text
+//         style={{
+//           color: `${paidStatusColor[orderDetail?.paidStatus]?.color}`,
+//           fontWeight: 700,
+//           fontSize: SF(14),
+//           backgroundColor: 'rgba(199, 199, 199, 0.2)',
+//           paddingVertical: SH(3),
+//           paddingHorizontal: SW(4),
+//           borderRadius: SF(4),
+//         }}
+//       >
+//         {orderDetail?.paidStatus} {orderDetail?.amount}
 //       </Text>
 //     </View>
 //     <Icon
@@ -398,117 +534,78 @@ const fromLocation = {
 };
 
 const Dashboard = ({ navigation }) => {
-  const { state, dispatch } = useGlobalContext();
+  const { logout } = useContext(AuthContext);
+  const { state, dispatch, fetchIncompleteOrder, location } =
+    useGlobalContext();
   const { todayIncompleteOrder, todayCompleteOrder, orderNav, ongoingOrder } =
     state;
+  const [refreshing, setRefreshing] = useState(false);
 
-  const orderDetails = state?.orderDetails;
-  console.log(ongoingOrder);
-
-  const mapRef = useRef(null);
-  useEffect(() => {
-    console.log(state.orderDetails);
-  }, [state]);
-
-  useEffect(() => {
-    console.log(orderNav);
-  }, [orderNav]);
-  const stateRef = useRef(state);
-
-  useEffect(() => {
-    stateRef.current = state;
-  }, [state]);
-
-  // Request location permission
-  const requestLocationPermission = async () => {
-    try {
-      if (Platform.OS === 'android') {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-        );
-        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-          console.warn('Location permission denied');
-          return;
-        }
-      }
-
-      Geolocation.getCurrentPosition(
-        position => {
-          const { latitude, longitude } = position.coords;
-          console.log('Current GPS:', latitude, longitude);
-          setOrigin({ latitude, longitude });
-        },
-        error => {
-          console.log('Geolocation error:', JSON.stringify(error));
-          alert(`Location Error: ${error.message}`);
-        },
-        {
-          enableHighAccuracy: false, // false uses network/wifi instead of GPS
-          timeout: 10000, // wait max 10s
-          maximumAge: 1000,
-        },
-      );
-    } catch (err) {
-      console.warn(err);
-    }
-  };
-
-  // useEffect(() => {
-  //   requestLocationPermission();
-  // }, []);
-  const handleDirectionsReady = useCallback((result, index) => {
-    const updatedOrders = stateRef.current.orderDetails.map((order, i) =>
-      i === index
-        ? {
-            ...order,
-            distance: result.distance,
-            duration: result.duration,
-          }
-        : order,
-    );
-    dispatch({
-      type: 'SET_ORDER_DETAILS',
-      payload: updatedOrders,
-    });
-
-    mapRef.current?.fitToCoordinates(result.coordinates, {
-      edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
-      animated: true,
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    // ⬇️ Call your API or reload dashboard data
+    fetchIncompleteOrder().then(() => {
+      setRefreshing(false);
     });
   }, []);
+  // const orderDetails = state?.orderDetails;
 
-  const handleDirectionsReady_2 = useCallback(
-    (result, index) => {
-      console.log('Directions result:', result);
-      console.log('Index:', index);
-      console.log('Current stateRef:', stateRef.current);
-      console.log(orderNav);
+  // const mapRef = useRef(null);
 
-      const updatedOrders = stateRef.current?.orderNav?.map((order, i) => {
-        console.log('Order in loop:', order, 'i:', i); // <-- should fire if array exists
-        return i === index
-          ? { ...order, distance: result.distance, duration: result.duration }
-          : order;
-      });
-      console.log(updatedOrders);
+  // const kevin = useRef(state);
 
-      if (updatedOrders) {
-        dispatch({
-          type: 'SET_ORDER_NAV',
-          payload: updatedOrders,
-        });
-      }
+  // useEffect(() => {
+  //   kevin.current = state;
+  // }, [state]);
 
-      mapRef.current?.fitToCoordinates(result.coordinates, {
-        edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
-        animated: true,
-      });
-    },
-    [], // don’t depend on `orderNav` if you're using stateRef
-  );
+  useEffect(() => {
+    fetchIncompleteOrder();
+  }, []);
+  // const handleDirectionsReady = useCallback((result, index) => {
+  //   const updatedOrders = kevin.current.orderDetails.map((order, i) =>
+  //     i === index
+  //       ? {
+  //           ...order,
+  //           distance: result.distance,
+  //           duration: result.duration,
+  //         }
+  //       : order,
+  //   );
+  //   dispatch({
+  //     type: 'SET_ORDER_DETAILS',
+  //     payload: updatedOrders,
+  //   });
+
+  //   mapRef.current?.fitToCoordinates(result.coordinates, {
+  //     edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
+  //     animated: true,
+  //   });
+  // }, []);
+
+  // const handleDirectionsReady = useCallback(
+  //   (result, index) => {
+  //     const updatedOrders = stateRef.current?.orderNav?.map((order, i) => {
+  //       return i === index
+  //         ? { ...order, distance: result.distance, duration: result.duration }
+  //         : order;
+  //     });
+
+  //     if (updatedOrders) {
+  //       dispatch({
+  //         type: 'SET_ORDER_NAV',
+  //         payload: updatedOrders,
+  //       });
+  //     }
+
+  //     mapRef.current?.fitToCoordinates(result.coordinates, {
+  //       edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
+  //       animated: true,
+  //     });
+  //   },
+  //   [], // don’t depend on `orderNav` if you're using stateRef
+  // );
 
   const [isOnGoing, setisOnGoing] = useState(true);
-  const [origin, setOrigin] = useState(null);
 
   const handleNavigate = orderDetail => {
     navigation.navigate('Order', { orderDetail });
@@ -553,7 +650,10 @@ const Dashboard = ({ navigation }) => {
               <View style={styles.line_3} />
             </View>
           </TouchableOpacity>
-          <Text style={{ fontSize: SF(20), fontWeight: 600, color: '#5E5E5E' }}>
+          <Text
+            onPress={logout}
+            style={{ fontSize: SF(20), fontWeight: 600, color: '#5E5E5E' }}
+          >
             Hi Kevin
           </Text>
         </View>
@@ -625,7 +725,7 @@ const Dashboard = ({ navigation }) => {
                     fontSize: SF(16),
                   }}
                 >
-                  {orderDetails.length} Orders
+                  {[...ongoingOrder, ...todayCompleteOrder]?.length} Orders
                 </Text>
               </View>
               <View
@@ -658,11 +758,11 @@ const Dashboard = ({ navigation }) => {
                     fontSize: SF(16),
                   }}
                 >
-                  {
-                    orderDetails?.filter(item => item.status === 'Delivered')
-                      .length
-                  }{' '}
-                  Orders
+                  {/* {
+                    todayCompleteOrder?.filter(item => item.status === 7)
+                      ?.length
+                  }{' '} */}
+                  {orderNav.filter(items => items.status === 7).length} Orders
                 </Text>
               </View>
               <View
@@ -695,10 +795,14 @@ const Dashboard = ({ navigation }) => {
                     fontSize: SF(16),
                   }}
                 >
-                  {orderDetails
-                    .filter(order => order.status === 'Delivered')
-                    .reduce((a, b) => a + b.distance, 0)
-                    .toFixed(2) || 0}{' '}
+                  {/* {todayCompleteOrder
+                    ?.filter(order => order.status === 7)
+                    ?.reduce((a, b) => a + b.location.total_km, 0)
+                    ?.toFixed(2) || 0}{' '} */}
+                  {orderNav
+                    .filter(items => items.status === 7)
+                    ?.reduce((a, b) => a + b.location.total_km, 0)
+                    ?.toFixed(2) || 0}
                   KM
                 </Text>
               </View>
@@ -751,7 +855,7 @@ const Dashboard = ({ navigation }) => {
                       item => item.status === 'Pickup Pending',
                     ).length
                   } */}
-                  {(todayIncompleteOrder?.pending_order_details).length}
+                  {todayIncompleteOrder?.pending_order_details?.length}
                 </Text>
 
                 <View
@@ -926,6 +1030,9 @@ const Dashboard = ({ navigation }) => {
               )}
               contentContainerStyle={styles.orderContainer}
               showsVerticalScrollIndicator={false}
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+              }
             />
             {/* <FlatList
               data={orderDetails.filter(items =>
@@ -946,7 +1053,7 @@ const Dashboard = ({ navigation }) => {
             /> */}
           </View>
         </View>
-        {fromLocation &&
+        {/* {fromLocation &&
           orderDetails.map((order, index) => (
             <MapViewDirections
               key={order.orderId}
@@ -961,8 +1068,8 @@ const Dashboard = ({ navigation }) => {
                 console.log('Directions error at index', index, error)
               }
             />
-          ))}
-        {ongoingOrder &&
+          ))} */}
+        {/* {ongoingOrder &&
           ongoingOrder?.map((order, index) => (
             <MapViewDirections
               key={order.id}
@@ -972,12 +1079,12 @@ const Dashboard = ({ navigation }) => {
               strokeWidth={2}
               strokeColor="#FF0000"
               mode="DRIVING"
-              onReady={result => handleDirectionsReady_2(result, index)}
+              onReady={result => handleDirectionsReady(result, index)}
               onError={error =>
                 console.log('Directions error at index', index, error)
               }
             />
-          ))}
+          ))} */}
       </View>
     </SafeAreaView>
   );
@@ -1115,5 +1222,10 @@ const styles = StyleSheet.create({
     fontWeight: 600,
     fontSize: SF(14),
     color: '#555454',
+  },
+  pickupAddress: {
+    color: 'rgba(7, 7, 7, 1)',
+    fontSize: SF(12),
+    fontWeight: 400,
   },
 });

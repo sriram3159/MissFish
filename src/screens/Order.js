@@ -20,20 +20,49 @@ import Map from '../components/commonComponent/Map';
 import { useState, useRef, useEffect } from 'react';
 import { useGlobalContext } from '../contexts/globalContext';
 import SwitchToggle from 'react-native-switch-toggle';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { postRequest } from '../services/apiService';
+import { PermissionsAndroid, Platform } from 'react-native';
+import Geolocation from '@react-native-community/geolocation';
+import getTimeDuration from '../utils/timeDurationConversion';
+
+const order_statuses = [
+  { id: 1, title: 'Pending' },
+  { id: 2, title: 'Order Accepted' },
+  { id: 3, title: 'Processing' },
+  { id: 4, title: 'Ready' },
+  { id: 5, title: 'Shipped' },
+  { id: 6, title: 'Order is Picked Up' },
+  { id: 7, title: 'Delivered' },
+  { id: 8, title: 'Request to Cancel' },
+  { id: 9, title: 'Cancelled' },
+  { id: 10, title: 'Declined' },
+];
+
+const getOrderStatus = statusCode => {
+  if (!statusCode) return 'Unknown'; // fallback for undefined/null/0
+
+  const statusObj = order_statuses.find(s => s.id === statusCode);
+
+  return statusObj ? statusObj.title : 'Unknown';
+};
 
 const Order = ({ navigation, route }) => {
-  const { state, dispatch } = useGlobalContext();
-
+  const {
+    state,
+    dispatch,
+    fetchIncompleteOrder,
+    location: gpsLocation,
+  } = useGlobalContext();
   const { orderDetail } = route.params;
 
   const [distance, setDistance] = useState(null);
   const [duration, setDuration] = useState(null);
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [orderData, setOrderData] = useState({});
+
   useEffect(() => {
-    const match = state.orderDetails.find(
-      order => order.orderId === orderDetail.orderId,
-    );
+    const match = state.orderDetails.find(order => order.id === orderDetail.id);
     if (match) {
       setOrderData(match);
     }
@@ -69,6 +98,7 @@ const Order = ({ navigation, route }) => {
   const [headerHeight, setHeaderHeight] = useState(SH(65));
   const [isEnabled, setIsEnabled] = useState(false);
   const toggleSwitch = () => setIsEnabled(previousState => !previousState);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (headerRef.current) {
@@ -98,39 +128,133 @@ const Order = ({ navigation, route }) => {
     setIsInfoOpen(!isInfoOpen);
   };
 
-  const orderType = {
-    ['Picked Up']: { text: 'Mark as Delivered', statusChange: 'Delivered' },
-    ['Pickup Pending']: {
-      text: 'Mark As Picked Up',
-      statusChange: 'Picked Up',
+  // const orderType = {
+  //   ['Picked Up']: { text: 'Mark as Delivered', statusChange: 'Delivered' },
+  //   ['Pickup Pending']: {
+  //     text: 'Mark As Picked Up',
+  //     statusChange: 'Picked Up',
+  //   },
+  //   ['Order inprogress']: {
+  //     text: 'Swipe To Accept Order',
+  //     statusChange: 'Pickup Pending',
+  //   },
+  // };
+
+  const deliveryOrderActions = {
+    Shipped: {
+      text: 'Mark as Picked Up',
+      statusChange: 'Order is Picked Up',
+      statusChangeNo: 6,
     },
-    ['Order inprogress']: {
-      text: 'Swipe To Accept Order',
-      statusChange: 'Pickup Pending',
+    'Order is Picked Up': {
+      text: 'Mark as Delivered',
+      statusChange: 'Delivered',
+      statusChangeNo: 7,
+    },
+    Delivered: {
+      text: 'Delivery Completed',
+      statusChange: null,
+      statusChangeNo: null,
+    },
+    'Request to Cancel': {
+      text: 'Approve Cancellation',
+      statusChange: 'Cancelled',
+      statusChangeNo: 9,
+    },
+    Cancelled: {
+      text: 'Order Cancelled',
+      statusChange: null,
+      statusChangeNo: null,
+    },
+    Declined: {
+      text: 'Order Declined',
+      statusChange: null,
+      statusChangeNo: null,
     },
   };
 
-  const handleChangeStatus = status => {
+  const handleChangeStatus = async status => {
     dispatch({
       type: 'UPDATE_ORDER_STATUS',
       payload: {
-        orderId: orderData.orderId,
+        orderId: orderData?.id,
         newStatus: status,
       },
+    });
+    try {
+      const location = await waitForLocation();
+      const data = await postRequest('/order/mark-pickup', {
+        latitude: location?.latitude,
+        longitude: location?.longitude,
+        order: orderData?.id,
+      });
+      fetchIncompleteOrder();
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  const handleNavigate = async status => {
+    dispatch({
+      type: 'UPDATE_ORDER_STATUS',
+      payload: {
+        orderId: orderData?.id,
+        newStatus: status,
+      },
+    });
+
+    try {
+      const data = await postRequest('/order/mark-delivered', {
+        is_paid: true,
+        order_id: orderData?.id,
+      });
+      fetchIncompleteOrder();
+      navigation.navigate('OrderDelivered', {
+        distance: Number(orderData?.location?.total_km).toFixed(2),
+        // distance: Number(distance).toFixed(2),
+        duration,
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const waitForLocation = () => {
+    return new Promise((resolve, reject) => {
+      let attempts = 0;
+      const interval = setInterval(() => {
+        attempts++;
+        if (gpsLocation) {
+          clearInterval(interval);
+          resolve(gpsLocation);
+        }
+        if (attempts > 20) {
+          // ⏳ max 10s (500ms * 20)
+          clearInterval(interval);
+          reject(new Error('Location not available'));
+        }
+      }, 500);
     });
   };
-  const handleNavigate = status => {
-    dispatch({
-      type: 'UPDATE_ORDER_STATUS',
-      payload: {
-        orderId: orderData.orderId,
-        newStatus: status,
-      },
-    });
-    navigation.navigate('OrderDelivered', {
-      distance: Number(distance).toFixed(2),
-      duration,
-    });
+
+  const handleAcceptanceStatus = async status => {
+    setLoading(true); // 🔄 start loader
+    try {
+      const location = await waitForLocation();
+
+      const data = await postRequest('/order/update-by-delivery-person', {
+        latitude: location?.latitude,
+        longitude: location?.longitude,
+        order: orderData?.id,
+        accept_status: status,
+      });
+
+      console.log('✅ API Response:', data);
+      fetchIncompleteOrder();
+    } catch (error) {
+      console.error('❌ Could not send acceptance status:', error);
+    } finally {
+      setLoading(false); // ✅ stop loader
+    }
   };
 
   return (
@@ -189,13 +313,24 @@ const Order = ({ navigation, route }) => {
           }}
         >
           <Map
-            status={orderData.status}
-            orderId={orderData.orderId}
+            status={getOrderStatus(orderData?.status)}
+            orderId={orderData?.id}
             distance={distance}
             duration={duration}
             setDistance={setDistance}
             setDuration={setDuration}
-            location={orderData.location}
+            location={
+              orderData?.location?.customer_location
+                ? {
+                    latitude: parseFloat(
+                      orderData?.location?.customer_location?.latitude,
+                    ),
+                    longitude: parseFloat(
+                      orderData?.location?.customer_location?.longitude,
+                    ),
+                  }
+                : null
+            }
           />
 
           {isInfoOpen && (
@@ -209,36 +344,28 @@ const Order = ({ navigation, route }) => {
                 },
               ]}
             >
-              <View style={styles.orderInfoContainer}>
-                <View>
-                  <View style={styles.orderInfoItemContainer}>
-                    <Text style={styles.orderInfoItem}>Vanjaram</Text>
-                    <Text style={styles.orderInfoDetail}>{`  [1kg X 2]`}</Text>
+              {orderData?.items.map((item, index) => (
+                <View key={index} style={styles.orderInfoContainer}>
+                  <View>
+                    <View style={styles.orderInfoItemContainer}>
+                      <Text style={styles.orderInfoItem}>
+                        {item?.product_name}
+                      </Text>
+                      <Text style={styles.orderInfoDetail}>
+                        {' '}
+                        {'['} {item?.qty} {']'}
+                      </Text>
+                    </View>
+                    <Text style={styles.orderInfoType}>
+                      {item?.sub_category?.category?.description}
+                    </Text>
                   </View>
-                  <Text style={styles.orderInfoType}>Fillets - Fresh Crab</Text>
+                  <Text style={styles.orderInfoPrice}>
+                    ₹ {item?.total_price}
+                  </Text>
                 </View>
-                <Text style={styles.orderInfoPrice}>₹ 200</Text>
-              </View>
-              <View style={styles.orderInfoContainer}>
-                <View>
-                  <View style={styles.orderInfoItemContainer}>
-                    <Text style={styles.orderInfoItem}>Crab</Text>
-                    <Text style={styles.orderInfoDetail}>{`  [1kg X 1]`}</Text>
-                  </View>
-                  <Text style={styles.orderInfoType}>Fillets - Fresh Crab</Text>
-                </View>
-                <Text style={styles.orderInfoPrice}>₹ 450</Text>
-              </View>
-              <View style={styles.orderInfoContainer}>
-                <View>
-                  <View style={styles.orderInfoItemContainer}>
-                    <Text style={styles.orderInfoItem}>Black Pomfret</Text>
-                    <Text style={styles.orderInfoDetail}>{`  [1kg X 1]`}</Text>
-                  </View>
-                  <Text style={styles.orderInfoType}>Fillets - Fresh Crab</Text>
-                </View>
-                <Text style={styles.orderInfoPrice}>₹ 450</Text>
-              </View>
+              ))}
+
               <View
                 style={{
                   display: 'flex',
@@ -265,7 +392,11 @@ const Order = ({ navigation, route }) => {
                     fontWeight: 700,
                   }}
                 >
-                  {orderData.amount}
+                  {orderData?.items.reduce(
+                    (sum, item) =>
+                      Number(sum) + (Number(item?.total_price) || 0),
+                    0,
+                  )}
                 </Text>
               </View>
             </Animated.View>
@@ -286,8 +417,38 @@ const Order = ({ navigation, route }) => {
           <View style={styles.recipientSubContainer}>
             <Icon name="bag-handle-outline" size={SF(24)} color={'#1332D0'} />
             <View style={styles.recipientSubContainerText}>
-              <Text style={styles.recipientName}>{orderData?.name}</Text>
+              <Text style={styles.recipientName}>
+                {orderData?.customer?.name}
+              </Text>
               <View style={styles.duration}>
+                {/* {distance > 0 ? (
+                  <Text style={styles.distance}>
+                    {Number(distance).toFixed(2)} Km
+                  </Text>
+                ) : (
+                  <View
+                    style={{
+                      width: SW(80),
+                      height: SF(30),
+                      borderRadius: SF(4),
+                      backgroundColor: '#e0e0e0',
+                      opacity: 0.5,
+                    }}
+                  />
+                )} */}
+
+                <Text style={styles.distance}>
+                  {Number(orderData?.location?.total_km).toFixed(2)} Km
+                </Text>
+
+                <Icon name="time-outline" size={SF(16)} color={'#1332D0'} />
+
+                <Text style={styles.durationText}>
+                  {getTimeDuration(orderData?.delivery_expected_time).current} -{' '}
+                  {getTimeDuration(orderData?.delivery_expected_time).extra}
+                </Text>
+              </View>
+              {/* <View style={styles.duration}>
                 {distance > 0 ? (
                   <Text style={styles.distance}>
                     {Number(distance).toFixed(2)} Km
@@ -319,7 +480,7 @@ const Order = ({ navigation, route }) => {
                     }}
                   />
                 )}
-              </View>
+              </View> */}
             </View>
           </View>
           <TouchableOpacity
@@ -387,7 +548,9 @@ const Order = ({ navigation, route }) => {
             <View style={styles.pickupSubContainerText}>
               <Text style={styles.pickupName}>Home</Text>
               <View style={styles.duration}>
-                <Text style={styles.pickupAddress}>{orderData.address}</Text>
+                <Text style={styles.pickupAddress}>
+                  {orderData?.contact_details?.meta?.address}
+                </Text>
               </View>
             </View>
           </View>
@@ -403,7 +566,8 @@ const Order = ({ navigation, route }) => {
           }}
         >
           <SwitchToggle
-            switchOn={isEnabled}
+            // switchOn={isEnabled}
+            switchOn={orderData?.payment?.payment_type === 1}
             onPress={() => setIsEnabled(!isEnabled)}
             containerStyle={{
               width: SF(55),
@@ -437,30 +601,145 @@ const Order = ({ navigation, route }) => {
               fontSize: SF(20),
             }}
           >
-            {orderData.amount}
+            {orderData?.payment?.amount}
           </Text>
         </View>
-        {orderData.status !== 'Delivered' && distance > 0 && (
-          <TouchableOpacity
-            onPress={() => {
-              orderData.status === 'Picked Up'
-                ? handleNavigate(orderType[orderData.status].statusChange)
-                : handleChangeStatus(orderType[orderData.status].statusChange);
+        {orderData?.delivery_details?.accept_status === 2 &&
+          (getOrderStatus(orderData?.status) === 'Shipped' ||
+            getOrderStatus(orderData?.status) === 'Order is Picked Up') &&
+          distance > 0 && (
+            <TouchableOpacity
+              onPress={() => {
+                getOrderStatus(orderData?.status) === 'Order is Picked Up'
+                  ? handleNavigate(
+                      deliveryOrderActions[getOrderStatus(orderData?.status)]
+                        .statusChangeNo,
+                    )
+                  : handleChangeStatus(
+                      deliveryOrderActions[getOrderStatus(orderData?.status)]
+                        .statusChangeNo,
+                    );
+              }}
+              style={styles.orderSwipeContainer}
+            >
+              <View style={styles.orderArrowContainer}>
+                <FontAwesomeIcon
+                  name="angle-double-right"
+                  size={SF(20)}
+                  color={'#03A360'}
+                />
+              </View>
+              <Text style={styles.orderSwipeText}>
+                {deliveryOrderActions[getOrderStatus(orderData?.status)]?.text}
+              </Text>
+              <Text></Text>
+            </TouchableOpacity>
+          )}
+        {orderData?.delivery_details?.accept_status === 1 && (
+          <View
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: SW(12),
+              marginVertical: SH(20),
+              marginHorizontal: SW(20),
             }}
-            style={styles.orderSwipeContainer}
           >
-            <View style={styles.orderArrowContainer}>
-              <FontAwesomeIcon
-                name="angle-double-right"
-                size={SF(20)}
-                color={'#03A360'}
+            <TouchableOpacity
+              style={{
+                backgroundColor: 'rgba(163, 3, 3, 1)',
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: SW(7),
+                justifyContent: 'center',
+                paddingVertical: SH(11),
+                borderRadius: SF(10),
+                flex: 1,
+              }}
+              onPress={() => handleAcceptanceStatus(3)}
+            >
+              <Icon name="close" color="rgba(255, 255, 255, 1)" size={SF(15)} />
+              <Text
+                style={{
+                  fontWeight: 700,
+                  fontSize: SF(15),
+                  color: 'rgba(255, 255, 255, 1)',
+                }}
+              >
+                Decline
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{
+                backgroundColor: 'rgba(3, 163, 96, 1)',
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: SW(7),
+                justifyContent: 'center',
+                paddingVertical: SH(11),
+                borderRadius: SF(10),
+                flex: 1,
+              }}
+              onPress={() => handleAcceptanceStatus(2)}
+            >
+              <MaterialCommunityIcons
+                name="check"
+                color="rgba(255, 255, 255, 1)"
+                size={SF(15)}
               />
+              <Text
+                style={{
+                  fontWeight: 700,
+                  fontSize: SF(15),
+                  color: 'rgba(255, 255, 255, 1)',
+                }}
+              >
+                {loading ? 'Loading...' : 'Accept'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        {orderData?.delivery_details?.accept_status === 3 && (
+          <View
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: SW(12),
+              marginVertical: SH(20),
+              marginHorizontal: SW(20),
+            }}
+          >
+            <View
+              style={{
+                backgroundColor: 'rgba(163, 3, 3, 1)',
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: SW(7),
+                justifyContent: 'center',
+                paddingVertical: SH(11),
+                borderRadius: SF(10),
+                flex: 1,
+              }}
+            >
+              {/* <Icon name="close" color="rgba(255, 255, 255, 1)" size={SF(15)} /> */}
+              <Text
+                style={{
+                  fontWeight: 700,
+                  fontSize: SF(15),
+                  color: 'rgba(255, 255, 255, 1)',
+                }}
+              >
+                Order Declined
+              </Text>
             </View>
-            <Text style={styles.orderSwipeText}>
-              {orderType[orderData.status].text}
-            </Text>
-            <Text></Text>
-          </TouchableOpacity>
+          </View>
         )}
       </View>
     </SafeAreaView>

@@ -30,14 +30,20 @@ import { postRequest } from '../../services/apiService';
 import { TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { GOOGLE_MAPS_APIKEY } from '@env';
+import { useGlobalContext } from '../../contexts/globalContext';
 
 const fromLocation = {
   latitude: 8.094902240100733,
   longitude: 77.48392429159924,
 };
 // const fromLocation = {
-//   latitude: 12.3051,
-//   longitude: 76.6551,
+//   latitude: 12.991345,
+//   longitude: 77.555958,
+// };
+
+// const location = {
+//   latitude: 12.950771,
+//   longitude: 77.584236,
 // };
 
 const Map = ({
@@ -49,8 +55,8 @@ const Map = ({
   status,
   orderId,
 }) => {
+  const { location: gpsLocation } = useGlobalContext();
   const mapRef = useRef(null);
-  const [origin, setOrigin] = useState(null);
 
   const [heading, setHeading] = useState(null);
   const [routeCoords, setRouteCoords] = useState([]);
@@ -58,11 +64,11 @@ const Map = ({
   const [isNavigating, setIsNavigating] = useState(false);
   const [hasUserNavigated, setHasUserNavigated] = useState(false);
   const locationData = useMemo(() => {
-    if (status === 'Picked Up') {
-      return origin || fromLocation; // fallback
+    if (status === 'Order is Picked Up') {
+      return gpsLocation || fromLocation; // fallback
     }
     return fromLocation;
-  }, [status, origin]);
+  }, [status, gpsLocation]);
   useEffect(() => {
     const degree_update_rate = 3;
 
@@ -75,56 +81,75 @@ const Map = ({
     };
   }, []);
 
-  const handleSubmitLoc = async (latitude, longitude) => {
-    try {
-      const data = await postRequest('/order/mark-pickup', {
-        latitude,
-        longitude,
-        order: orderId,
-      });
-      console.log(data);
-    } catch (error) {
-      console.log(error);
-    }
-  };
+  // useEffect(() => {
+  //   let watchId;
+
+  //   if (status === 'Order is Picked Up') {
+  //     const watchUserLocation = async () => {
+  //       if (Platform.OS === 'android') {
+  //         const granted = await PermissionsAndroid.request(
+  //           PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+  //         );
+  //         if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+  //           console.warn('Location permission denied');
+  //           return;
+  //         }
+  //       }
+
+  //       Geolocation.getCurrentPosition(
+  //         pos => {
+  //           setOrigin({
+  //             latitude: pos.coords?.latitude,
+  //             longitude: pos.coords?.longitude,
+  //           });
+  //         },
+  //         err => console.log('Error getting current pos:', err),
+  //         {
+  //           enableHighAccuracy: false, // 👈 fast, uses WiFi/Cell
+  //           timeout: 5000,
+  //           maximumAge: 10000, // allow cached location
+  //         },
+  //       );
+
+  //       // Then immediately start a high-accuracy watcher
+  //       watchId = Geolocation.watchPosition(
+  //         position => {
+  //           const { latitude, longitude } = position.coords;
+  //           setOrigin({ latitude, longitude });
+  //         },
+  //         error => console.error('Watch error:', error),
+  //         {
+  //           enableHighAccuracy: true,
+  //           distanceFilter: 0,
+  //           interval: 1000,
+  //           fastestInterval: 1000,
+  //           forceRequestLocation: true,
+  //           showLocationDialog: true,
+  //         },
+  //       );
+  //     };
+
+  //     watchUserLocation();
+  //   }
+
+  //   return () => {
+  //     if (watchId) Geolocation.clearWatch(watchId);
+  //   };
+  // }, [status]);
+
   useEffect(() => {
-    let watchId;
-
-    if (status === 'Picked Up') {
-      const watchUserLocation = async () => {
-        if (Platform.OS === 'android') {
-          const granted = await PermissionsAndroid.request(
-            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-          );
-          if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-            console.warn('Location permission denied');
-            return;
-          }
-        }
-
-        watchId = Geolocation.watchPosition(
-          position => {
-            const { latitude, longitude } = position.coords;
-            setOrigin({ latitude, longitude });
-            handleSubmitLoc(latitude, longitude); // optional
-          },
-          error => console.error('Watch error:', error),
-          {
-            enableHighAccuracy: true,
-            distanceFilter: 5,
-            interval: 3000,
-            fastestInterval: 2000,
-          },
-        );
-      };
-
-      watchUserLocation();
+    if (status === 'Order is Picked Up') {
+      mapRef.current?.animateToRegion(
+        {
+          latitude: gpsLocation?.latitude,
+          longitude: gpsLocation?.longitude,
+          latitudeDelta: 0.0035,
+          longitudeDelta: 0.0035,
+        },
+        1000, // animation duration
+      );
     }
-
-    return () => {
-      if (watchId) Geolocation.clearWatch(watchId);
-    };
-  }, [status]);
+  }, [status, gpsLocation]);
 
   const handleDirectionsReady = useCallback(
     result => {
@@ -168,8 +193,8 @@ const Map = ({
               provider={PROVIDER_GOOGLE}
               showsUserLocation={false}
               initialRegion={{
-                latitude: fromLocation.latitude,
-                longitude: fromLocation.longitude,
+                latitude: fromLocation?.latitude,
+                longitude: fromLocation?.longitude,
                 latitudeDelta: 0.2,
                 longitudeDelta: 0.2,
               }}
@@ -194,12 +219,12 @@ const Map = ({
                 </View>
               </Marker>
 
-              {origin && status === 'Picked Up' && (
+              {gpsLocation && status === 'Order is Picked Up' && (
                 <Marker
-                  coordinate={origin}
+                  coordinate={gpsLocation}
                   anchor={{ x: 0.5, y: 0.5 }}
                   flat
-                  rotation={status === 'Picked Up' ? heading : 0}
+                  rotation={status === 'Order is Picked Up' ? heading : 0}
                 >
                   <Image
                     source={images.bike}
@@ -225,20 +250,22 @@ const Map = ({
                 </View>
               </Marker>
 
-              {status === 'Picked Up' && origin && (
+              {status === 'Order is Picked Up' && gpsLocation && (
                 <MapViewDirections
                   origin={fromLocation}
-                  destination={origin}
+                  destination={gpsLocation}
                   apikey={GOOGLE_MAPS_APIKEY}
                   strokeWidth={2}
-                  strokeColor={status === 'Picked Up' ? 'black' : '#4285F4'} // gray if moving, blue if static
+                  strokeColor={
+                    status === 'Order is Picked Up' ? 'black' : '#4285F4'
+                  } // gray if moving, blue if static
                   mode="DRIVING"
                 />
               )}
 
-              {status === 'Picked Up' && origin && (
+              {status === 'Order is Picked Up' && gpsLocation && (
                 <MapViewDirections
-                  origin={origin}
+                  origin={gpsLocation}
                   destination={location}
                   apikey={GOOGLE_MAPS_APIKEY}
                   strokeWidth={2}
@@ -248,8 +275,8 @@ const Map = ({
                   onReady={handleDirectionsReady}
                 />
               )}
-              {/* 👇 THIS IS THE NEW ONE: fromLocation → location when NOT Picked Up */}
-              {status !== 'Picked Up' && (
+              {/* 👇 THIS IS THE NEW ONE: fromLocation → location when NOT Order is Picked Up */}
+              {status !== 'Order is Picked Up' && (
                 <MapViewDirections
                   origin={fromLocation}
                   destination={location}
@@ -271,7 +298,7 @@ const Map = ({
             </Text>
           </View>
         )}
-        {origin && showNavigateBtn && (
+        {gpsLocation && showNavigateBtn && status === 'Order is Picked Up' && (
           <View
             style={{
               position: 'absolute',
@@ -286,8 +313,8 @@ const Map = ({
                 setHasUserNavigated(true);
                 mapRef.current.animateToRegion(
                   {
-                    latitude: origin.latitude,
-                    longitude: origin.longitude,
+                    latitude: gpsLocation?.latitude,
+                    longitude: gpsLocation?.longitude,
                     latitudeDelta: 0.0035,
                     longitudeDelta: 0.0035,
                   },

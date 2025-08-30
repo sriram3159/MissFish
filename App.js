@@ -7,6 +7,7 @@ import Orientation from 'react-native-orientation-locker';
 import { PermissionsAndroid, Platform, Alert, Linking } from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
 import { Provider as PaperProvider } from 'react-native-paper';
+import { AuthProvider } from './src/contexts/AuthContext';
 const App = () => {
   useEffect(() => {
     Orientation.lockToPortrait();
@@ -74,9 +75,11 @@ const App = () => {
   return (
     <SafeAreaProvider>
       <PaperProvider>
-        <GlobalProvider>
-          <AppNavigator />
-        </GlobalProvider>
+        <AuthProvider>
+          <GlobalProvider>
+            <AppNavigator />
+          </GlobalProvider>
+        </AuthProvider>
       </PaperProvider>
     </SafeAreaProvider>
   );

@@ -7,12 +7,23 @@ function formatTime(date) {
   return `${hours}:${minutes} ${ampm}`; // Example: "4:45 PM"
 }
 
-function formatDate(date) {
+function formatDate(date, type = 1) {
   const d = new Date(date);
   const day = String(d.getDate()).padStart(2, '0');
   const month = d.toLocaleString('en-US', { month: 'short' }).toUpperCase(); // 'Jul'
   const year = d.getFullYear();
-  return `${day}-${month}-${year}`;
+  if (type == 1) {
+    return `${day}-${month}-${year}`;
+  } else {
+    return `${day}/${month}/${year}`;
+  }
+}
+function formatDateNumeric(date) {
+  const d = new Date(date);
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0'); // numeric month (01–12)
+  const year = d.getFullYear();
+  return `${year}-${month}-${day}`;
 }
 
-export { formatDate, formatTime };
+export { formatDate, formatTime, formatDateNumeric };
