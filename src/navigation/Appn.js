@@ -5,7 +5,7 @@ import OtpVerify from '../screens/OtpVerify';
 import { StatusBar } from 'react-native';
 import Order from '../screens/Order';
 import Dashboard from '../screens/Dashboard';
-import orderDelivered from '../screens/OrderDelivered';
+import OrderDelivered from '../screens/OrderDelivered';
 import Reports from '../screens/Reports';
 import AdminLayout from '../screens/AdminLayout';
 
@@ -46,7 +46,7 @@ const AppNavigator = () => {
           />
           <Stack.Screen
             name="OrderDelivered"
-            component={orderDelivered}
+            component={OrderDelivered}
             options={{ title: 'OrderDelivered' }}
           />
           <Stack.Screen

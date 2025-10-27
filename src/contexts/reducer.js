@@ -293,6 +293,7 @@ export const initialState = {
   todayCompleteOrder: [],
   report: null,
   ongoingOrder: [],
+  location: { latitude: 8.094902240100733, longitude: 77.48392429159924 },
 };
 
 export const GlobalReducer = (state, action) => {

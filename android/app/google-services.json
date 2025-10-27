@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "711411147281",
+    "project_id": "seaqu-f91f0",
+    "storage_bucket": "seaqu-f91f0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:711411147281:android:6b5592245f38330a8187b0",
+        "android_client_info": {
+          "package_name": "com.missfiss"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDnzKr7DHjyrCsm_QwxVC2vdb4595RYGuU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:711411147281:android:08c2805e27c52d448187b0",
+        "android_client_info": {
+          "package_name": "com.seaqu"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDnzKr7DHjyrCsm_QwxVC2vdb4595RYGuU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -25,12 +25,7 @@ const AdminLayout = () => {
     setShowOrderScreen(false);
   };
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar
-        translucent={false}
-        backgroundColor="rgba(245, 246, 251, 1)" // or your gradient start color
-        barStyle="dark-content" // or "light-content" based on your theme
-      />
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       {navType.menu && (
         <AdminDashboard
           showOrderScreen={showOrderScreen}

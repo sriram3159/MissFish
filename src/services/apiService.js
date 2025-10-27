@@ -8,6 +8,8 @@ export const postRequest = async (endpoint, data) => {
     const response = await api.post(endpoint, data);
     return response.data;
   } catch (error) {
+    console.log(error);
+
     throw error;
   }
 };

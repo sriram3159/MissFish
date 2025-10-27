@@ -18,6 +18,7 @@ import DateRangePicker from '../components/commonComponent/DateRangePicker';
 import { formatDate, formatTime, formatDateNumeric } from '../utils/formatTime';
 import { useEffect, useState } from 'react';
 import colorsset from '../utils/colors';
+import { getStatusBarHeight } from 'react-native-status-bar-height';
 
 const Reports = ({ navigation }) => {
   const { state, dispatch, fetchReport } = useGlobalContext();
@@ -103,7 +104,7 @@ const Reports = ({ navigation }) => {
               width: SW(143),
             }}
           >
-            {orderDetail.address}
+            {orderDetail.location_details?.address}
           </Text>
           <Text
             style={{
@@ -133,12 +134,7 @@ const Reports = ({ navigation }) => {
     setfilteredData(filteredData);
   }, [fromDate, toDate]);
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar
-        backgroundColor="rgba(255, 255, 255, 1)"
-        barStyle="dark-content"
-        translucent={false} // This ensures StatusBar does not overlap content
-      />
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <View
         style={{
           borderRadius: SF(10),
@@ -449,6 +445,7 @@ const styles = StyleSheet.create({
     flex: 1,
     // backgroundColor: colorsset.theme_backgound,
     backgroundColor: 'rgba(255, 255, 255, 1)',
+    paddingTop: getStatusBarHeight(),
   },
   back: {
     width: SF(30),
@@ -465,7 +462,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginHorizontal: SW(13),
-    marginTop: SH(12),
+    // marginTop: SH(12),
+    marginTop: SH(17),
     marginBottom: SH(14),
   },
   title: {

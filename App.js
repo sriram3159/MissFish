@@ -1,77 +1,84 @@
-import { useEffect } from 'react';
+// import { SafeAreaProvider } from 'react-native-safe-area-context';
+// import { Provider as PaperProvider } from 'react-native-paper';
+// import Orientation from 'react-native-orientation-locker';
+// import { useEffect } from 'react';
+
+// import AppNavigator from './src/navigation/AppNavigator';
+// import { GlobalProvider } from './src/contexts/globalContext';
+// import { AuthProvider } from './src/contexts/AuthContext';
+// import {
+//   registerBackgroundHandler,
+//   setupNotificationListeners,
+//   setupNotifications,
+// } from './src/services/notifications';
+// // import LocationGate from './src/components/LocationGate';
+
+// const App = () => {
+//   useEffect(() => {
+//     Orientation.lockToPortrait();
+//   }, []);
+//   useEffect(() => {
+//     registerBackgroundHandler();
+//     setupNotifications(); // Gets token + asks permission
+//     setupNotificationListeners(); // Listens for incoming messages
+//   }, []);
+
+//   return (
+//     <SafeAreaProvider>
+//       <PaperProvider>
+//         <AuthProvider>
+//           <GlobalProvider>
+//             {/* <LocationGate> */}
+//             <AppNavigator />
+//             {/* </LocationGate> */}
+//           </GlobalProvider>
+//         </AuthProvider>
+//       </PaperProvider>
+//     </SafeAreaProvider>
+//   );
+// };
+
+// export default App;
+
+// App.js
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Provider as PaperProvider } from 'react-native-paper';
+import Orientation from 'react-native-orientation-locker';
+import { useEffect, useState } from 'react';
 
 import AppNavigator from './src/navigation/AppNavigator';
 import { GlobalProvider } from './src/contexts/globalContext';
-import Orientation from 'react-native-orientation-locker';
-import { PermissionsAndroid, Platform, Alert, Linking } from 'react-native';
-import Geolocation from '@react-native-community/geolocation';
-import { Provider as PaperProvider } from 'react-native-paper';
 import { AuthProvider } from './src/contexts/AuthContext';
+// Import registerBackgroundHandler
+import {
+  registerBackgroundHandler, // ✅ Add this import
+  setupNotificationListeners,
+  setupNotifications,
+} from './src/services/notifications';
+
 const App = () => {
+  const [permissionsChecked, setPermissionsChecked] = useState(false);
+
   useEffect(() => {
     Orientation.lockToPortrait();
-  }, []);
-  useEffect(() => {
-    const initGPSCheck = async () => {
-      if (Platform.OS === 'android') {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-          {
-            title: 'Location Permission',
-            message: 'We need access to your location.',
-            buttonNeutral: 'Ask Me Later',
-            buttonNegative: 'Cancel',
-            buttonPositive: 'OK',
-          },
-        );
 
-        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-          checkIfLocationEnabled();
-        } else {
-          Alert.alert('Permission Denied', 'Location permission is required.');
-        }
-      } else {
-        // For iOS, just check location
-        checkIfLocationEnabled();
-      }
+    // Setup notifications and listeners
+    const initializeNotifications = async () => {
+      await setupNotifications(); // Gets token and subscribes
+      setupNotificationListeners(); // Sets up onMessage, etc.
+      setPermissionsChecked(true);
     };
 
-    const checkIfLocationEnabled = () => {
-      Geolocation.getCurrentPosition(
-        position => {
-          console.log('Location enabled:', position);
-        },
-        error => {
-          console.log('Location error:', error);
-          if (error.code === 2) {
-            Alert.alert(
-              'Enable Location',
-              'Please enable GPS to use location features.',
-              [
-                {
-                  text: 'Open Settings',
-                  onPress: () => Linking.openSettings(),
-                },
-                {
-                  text: 'Cancel',
-                  style: 'cancel',
-                },
-              ],
-              { cancelable: false },
-            );
-          }
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 5000,
-          maximumAge: 1000,
-        },
-      );
-    };
+    initializeNotifications();
 
-    initGPSCheck();
+    // Optional: Add a cleanup function if needed
+    // return () => { ... };
   }, []);
+
+  if (!permissionsChecked) {
+    return null; // Or a loading component
+  }
+
   return (
     <SafeAreaProvider>
       <PaperProvider>

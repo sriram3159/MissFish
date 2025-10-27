@@ -22,9 +22,10 @@ import { useGlobalContext } from '../contexts/globalContext';
 import SwitchToggle from 'react-native-switch-toggle';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { postRequest } from '../services/apiService';
-import { PermissionsAndroid, Platform } from 'react-native';
-import Geolocation from '@react-native-community/geolocation';
 import getTimeDuration from '../utils/timeDurationConversion';
+import { getStatusBarHeight } from 'react-native-status-bar-height';
+import { Alert } from 'react-native'; // Add Alert import
+import Geolocation from '@react-native-community/geolocation';
 
 const order_statuses = [
   { id: 1, title: 'Pending' },
@@ -40,7 +41,7 @@ const order_statuses = [
 ];
 
 const getOrderStatus = statusCode => {
-  if (!statusCode) return 'Unknown'; // fallback for undefined/null/0
+  if (!statusCode) return 'Unknown';
 
   const statusObj = order_statuses.find(s => s.id === statusCode);
 
@@ -128,18 +129,6 @@ const Order = ({ navigation, route }) => {
     setIsInfoOpen(!isInfoOpen);
   };
 
-  // const orderType = {
-  //   ['Picked Up']: { text: 'Mark as Delivered', statusChange: 'Delivered' },
-  //   ['Pickup Pending']: {
-  //     text: 'Mark As Picked Up',
-  //     statusChange: 'Picked Up',
-  //   },
-  //   ['Order inprogress']: {
-  //     text: 'Swipe To Accept Order',
-  //     statusChange: 'Pickup Pending',
-  //   },
-  // };
-
   const deliveryOrderActions = {
     Shipped: {
       text: 'Mark as Picked Up',
@@ -183,6 +172,8 @@ const Order = ({ navigation, route }) => {
     });
     try {
       const location = await waitForLocation();
+      console.log(location);
+
       const data = await postRequest('/order/mark-pickup', {
         latitude: location?.latitude,
         longitude: location?.longitude,
@@ -218,58 +209,173 @@ const Order = ({ navigation, route }) => {
     }
   };
 
-  const waitForLocation = () => {
+  // const waitForLocation = () => {
+  //   console.log(gpsLocation);
+
+  //   return new Promise((resolve, reject) => {
+  //     let attempts = 0;
+  //     const interval = setInterval(() => {
+  //       attempts++;
+  //       if (gpsLocation) {
+  //         clearInterval(interval);
+  //         resolve(gpsLocation);
+  //       }
+  //       if (attempts > 20) {
+  //         // ⏳ max 10s (500ms * 20)
+  //         clearInterval(interval);
+  //         reject(new Error('Location not available'));
+  //       }
+  //     }, 500);
+  //   });
+  // };
+
+  // const handleAcceptanceStatus = async status => {
+  //   setLoading(true); // 🔄 start loader
+  //   try {
+  //     const location = await waitForLocation();
+
+  //     const data = await postRequest('/order/update-by-delivery-person', {
+  //       latitude: location?.latitude,
+  //       longitude: location?.longitude,
+  //       order: orderData?.id,
+  //       accept_status: status,
+  //     });
+
+  //     console.log('✅ API Response:', data);
+  //     fetchIncompleteOrder();
+  //   } catch (error) {
+  //     console.error('❌ Could not send acceptance status:', error);
+  //   } finally {
+  //     setLoading(false); // ✅ stop loader
+  //   }
+  // };
+
+  const waitForLocation = async () => {
+    // ✅ First: try global context (fast path)
+    if (gpsLocation?.latitude && gpsLocation?.longitude) {
+      return gpsLocation;
+    }
+
+    // ✅ Second: wait up to 6 seconds for context to populate
+    for (let i = 0; i < 12; i++) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      if (gpsLocation?.latitude && gpsLocation?.longitude) {
+        return gpsLocation;
+      }
+    }
+
+    // ✅ Third: fallback to direct Geolocation (last resort)
     return new Promise((resolve, reject) => {
-      let attempts = 0;
-      const interval = setInterval(() => {
-        attempts++;
-        if (gpsLocation) {
-          clearInterval(interval);
-          resolve(gpsLocation);
-        }
-        if (attempts > 20) {
-          // ⏳ max 10s (500ms * 20)
-          clearInterval(interval);
-          reject(new Error('Location not available'));
-        }
-      }, 500);
+      Geolocation.getCurrentPosition(
+        pos =>
+          resolve({
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+          }),
+        err =>
+          reject(
+            new Error('Location unavailable: ' + (err.message || err.code)),
+          ),
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 },
+      );
     });
   };
-
   const handleAcceptanceStatus = async status => {
     setLoading(true); // 🔄 start loader
     try {
-      const location = await waitForLocation();
+      let location = gpsLocation; // Get location from context first
+
+      // Check if context location is valid
+      if (
+        !location ||
+        typeof location.latitude !== 'number' ||
+        typeof location.longitude !== 'number'
+      ) {
+        console.log(
+          'Context location invalid, attempting direct Geolocation.getCurrentPosition...',
+        );
+        // Fallback: Get location directly using Geolocation API
+        location = await new Promise((resolve, reject) => {
+          Geolocation.getCurrentPosition(
+            position => {
+              console.log(
+                'Got location from direct Geolocation API:',
+                position.coords.latitude,
+                position.coords.longitude,
+              );
+              resolve({
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+              });
+            },
+            error => {
+              console.error(
+                'Error getting location from direct Geolocation API:',
+                error,
+              );
+              reject(error);
+            },
+            {
+              enableHighAccuracy: true,
+              timeout: 10000, // 10 seconds
+              maximumAge: 30000, // 30 seconds (acceptable age for this specific action)
+            },
+          );
+        });
+      }
+
+      // Final check on location validity
+      if (
+        !location ||
+        typeof location.latitude !== 'number' ||
+        typeof location.longitude !== 'number'
+      ) {
+        throw new Error('Current location could not be determined.');
+      }
+
+      console.log('Sending location:', location.latitude, location.longitude); // Debug log
 
       const data = await postRequest('/order/update-by-delivery-person', {
-        latitude: location?.latitude,
-        longitude: location?.longitude,
+        latitude: location.latitude,
+        longitude: location.longitude,
         order: orderData?.id,
-        accept_status: status,
+        accept_status: status, // 2 for Accept, 3 for Decline
       });
 
       console.log('✅ API Response:', data);
-      fetchIncompleteOrder();
+      fetchIncompleteOrder(); // Refreshes the order list in the context
+
+      // Optional: Show success message
+      // Alert.alert("Success", status === 2 ? "Order accepted!" : "Order declined.");
     } catch (error) {
-      console.error('❌ Could not send acceptance status:', error);
+      console.error(
+        '❌ Could not send acceptance status:',
+        error.message || error,
+      );
+      // Check for specific Geolocation errors
+      let errorMessage = 'Could not update order status.';
+      if (error.code === 1) {
+        // PERMISSION_DENIED
+        errorMessage =
+          'Location permission is required to accept orders. Please enable it in Settings.';
+      } else if (error.code === 2) {
+        // POSITION_UNAVAILABLE
+        errorMessage =
+          'Location information is unavailable. Please ensure GPS is enabled.';
+      } else if (error.code === 3) {
+        // TIMEOUT
+        errorMessage = 'Location request timed out. Please try again.';
+      } else {
+        errorMessage += ` ${error.message || 'Please try again.'}`;
+      }
+      Alert.alert('Error', errorMessage); // Show user-friendly error
     } finally {
       setLoading(false); // ✅ stop loader
     }
   };
-
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar
-        backgroundColor="rgba(255, 255, 255, 1)"
-        barStyle="dark-content"
-        translucent={false} // This ensures StatusBar does not overlap content
-      />
-
-      <View
-        style={{
-          borderRadius: SF(10),
-        }}
-      >
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <View>
         {/* Header */}
         <View style={styles.header} ref={headerRef}>
           <View style={styles.titleContainer}>
@@ -308,11 +414,12 @@ const Order = ({ navigation, route }) => {
         <View
           style={{
             position: 'relative',
-            height: SH(493),
+            height: SH(450),
             width: '100%',
           }}
         >
           <Map
+            key={orderData?.id + orderData?.status}
             status={getOrderStatus(orderData?.status)}
             orderId={orderData?.id}
             distance={distance}
@@ -532,9 +639,7 @@ const Order = ({ navigation, route }) => {
               <Text style={styles.pickupName}>GreenWays Store -2</Text>
               <View style={styles.duration}>
                 <Text style={styles.pickupAddress}>
-                  {
-                    '1/78, Middle Street, Veeranamangalam\n Near Lutheran Church - 629901'
-                  }
+                  {'696, Manakudy Rd, Manakudy, Tamil Nadu 629002'}
                 </Text>
               </View>
             </View>
@@ -565,7 +670,7 @@ const Order = ({ navigation, route }) => {
             marginTop: SH(15),
           }}
         >
-          <SwitchToggle
+          {/* <SwitchToggle
             // switchOn={isEnabled}
             switchOn={orderData?.payment?.payment_type === 1}
             onPress={() => setIsEnabled(!isEnabled)}
@@ -583,7 +688,7 @@ const Order = ({ navigation, route }) => {
             circleColorOn="rgba(255, 255, 255, 1)"
             circleColorOff="rgba(255, 255, 255, 1)"
             backgroundColorOn="rgba(50, 173, 230, 1)"
-          />
+          /> */}
           <Text
             style={{
               color: 'rgba(85, 84, 84, 1)',
@@ -622,13 +727,14 @@ const Order = ({ navigation, route }) => {
               }}
               style={styles.orderSwipeContainer}
             >
-              <View style={styles.orderArrowContainer}>
+              <Text></Text>
+              {/* <View style={styles.orderArrowContainer}>
                 <FontAwesomeIcon
                   name="angle-double-right"
                   size={SF(20)}
                   color={'#03A360'}
                 />
-              </View>
+              </View> */}
               <Text style={styles.orderSwipeText}>
                 {deliveryOrderActions[getOrderStatus(orderData?.status)]?.text}
               </Text>
@@ -741,6 +847,22 @@ const Order = ({ navigation, route }) => {
             </View>
           </View>
         )}
+        {orderData?.delivery_details?.accept_status === 2 &&
+          !(
+            getOrderStatus(orderData?.status) === 'Shipped' ||
+            getOrderStatus(orderData?.status) === 'Order is Picked Up'
+          ) &&
+          distance > 0 && (
+            <TouchableOpacity
+              disabled
+              style={styles.orderSwipeDisableContainer}
+            >
+              <Text></Text>
+
+              <Text style={styles.orderSwipeText}>Waiting for Shipment</Text>
+              <Text></Text>
+            </TouchableOpacity>
+          )}
       </View>
     </SafeAreaView>
   );
@@ -753,6 +875,7 @@ const styles = StyleSheet.create({
     flex: 1,
     // backgroundColor: colorsset.theme_backgound,
     backgroundColor: 'rgba(255, 255, 255, 1)',
+    // paddingTop: getStatusBarHeight(),
   },
   back: {
     width: SF(30),
@@ -769,8 +892,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginHorizontal: SW(13),
-    marginTop: SH(12),
     marginBottom: SH(14),
+    marginTop: SH(12),
   },
   title: {
     fontWeight: 600,
@@ -945,6 +1068,18 @@ const styles = StyleSheet.create({
     marginHorizontal: SW(35),
     marginTop: SH(9),
   },
+  orderSwipeDisableContainer: {
+    display: 'flex',
+    flexDirection: 'row',
+    backgroundColor: '#9BD7C0',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: SF(5),
+    borderRadius: SF(70),
+    marginBottom: SH(28),
+    marginHorizontal: SW(35),
+    marginTop: SH(9),
+  },
   orderArrowContainer: {
     width: SF(35),
     height: SF(35),
@@ -958,6 +1093,9 @@ const styles = StyleSheet.create({
     fontWeight: 700,
     fontSize: SF(16),
     color: '#FFFFFF',
+    height: SF(35),
+    textAlign: 'center',
+    textAlignVertical: 'center',
   },
   orderInfoContainer: {
     display: 'flex',

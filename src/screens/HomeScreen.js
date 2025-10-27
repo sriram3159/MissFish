@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   StyleSheet,
   Text,
   View,
-  StatusBar,
   TextInput,
   TouchableOpacity,
   Image,
@@ -11,18 +10,36 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Keyboard,
 } from 'react-native';
 import colorsset from '../utils/colors';
 import { SF, SH, SW } from '../utils/dimensions';
 import images from '../image/images';
-import LinearGradient from 'react-native-linear-gradient';
 import { loginUser } from '../services/authService';
+import Svg, { Ellipse, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 const HomeScreen = ({ navigation }) => {
   const [mobileNumber, setMobileNumber] = useState('');
   const [showError, setShowError] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      () => setKeyboardVisible(true),
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      () => setKeyboardVisible(false),
+    );
+
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
   const handleLogin = async () => {
     setLoading(true);
     if (mobileNumber.length === 10) {
@@ -35,10 +52,12 @@ const HomeScreen = ({ navigation }) => {
         }
       } catch (error) {
         console.log(error);
-
         Alert.alert('OTP Send status', error.status || 'Something went wrong');
       } finally {
         setLoading(false);
+        if (true) {
+          navigation.replace('OtpVerify', { mobileNumber });
+        }
       }
     } else {
       setShowError(true);
@@ -49,29 +68,60 @@ const HomeScreen = ({ navigation }) => {
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={{ flex: 1 }}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20} // tweak offset if needed
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 20} // pushes content correctly
     >
-      <ScrollView
-        style={style.container}
-        contentContainerStyle={{ flexGrow: 1 }}
-        keyboardShouldPersistTaps="handled"
-      >
-        <LinearGradient
-          colors={[
-            'rgba(75, 197, 238, 0.66)',
-            'rgba(150, 25, 75, 0.3828)',
-            'rgba(255, 232, 214, 0.66)',
-          ]}
-          start={{ x: 0.5, y: 0 }}
-          end={{ x: 0.1, y: 1 }}
-          style={style.container}
+      <View style={style.container}>
+        {/* Ellipse gradient background */}
+        <Svg
+          height="900"
+          width="1100"
+          style={{
+            position: 'absolute',
+            top: -314,
+            left: -485,
+            transform: [{ rotate: '16.31deg' }],
+          }}
         >
-          <View style={style.titleContainer}>
+          <Defs>
+            <LinearGradient id="grad" x1="50%" y1="0%" x2="50%" y2="100%">
+              <Stop
+                offset="0%"
+                stopColor="rgba(75, 197, 238, 0.66)"
+                stopOpacity="0"
+              />
+              <Stop
+                offset="50%"
+                stopColor="rgba(75, 197, 238, 0.66)"
+                stopOpacity="0.7"
+              />
+              <Stop
+                offset="75%"
+                stopColor="rgba(150, 25, 75, 0.38)"
+                stopOpacity="0.5"
+              />
+              <Stop
+                offset="100%"
+                stopColor="rgba(255, 232, 214, 0.66)"
+                stopOpacity="1"
+              />
+            </LinearGradient>
+          </Defs>
+          <Ellipse cx="550" cy="450" rx="500" ry="417" fill="url(#grad)" />
+        </Svg>
+
+        {/* Main Content */}
+        <View style={{ flex: 1, justifyContent: 'center' }}>
+          <View
+            style={[style.titleContainer, isKeyboardVisible && { top: SH(40) }]}
+          >
             <View style={style.imageContainer}>
               <Image
                 source={images.homeScreen}
                 resizeMode="contain"
-                style={style.image}
+                style={[
+                  style.image,
+                  isKeyboardVisible && { width: SW(200), height: SH(180) }, // shrink image
+                ]}
               />
             </View>
             <Text style={style.title}>MissFish</Text>
@@ -79,27 +129,30 @@ const HomeScreen = ({ navigation }) => {
               style={style.subTitle}
             >{`Taste the ocean in \nevery bite!`}</Text>
           </View>
-        </LinearGradient>
-        <Text style={style.text}>Enter Mobile Number</Text>
-        <TextInput
-          style={style.input}
-          keyboardType="default"
-          maxLength={10}
-          value={mobileNumber}
-          onChangeText={text => setMobileNumber(text.replace(/[^0-9]/g, ''))}
-        />
-        {showError && (
-          <Text style={style.errorText}>
-            Please enter a valid 10-digit number
-          </Text>
-        )}
-        <TouchableOpacity onPress={handleLogin} style={style.button}>
-          <Text style={style.buttonText}>Send OTP</Text>
-        </TouchableOpacity>
-      </ScrollView>
+
+          <Text style={style.text}>Enter Mobile Number</Text>
+          <TextInput
+            style={style.input}
+            keyboardType="number-pad"
+            maxLength={10}
+            value={mobileNumber}
+            onChangeText={text => setMobileNumber(text.replace(/[^0-9]/g, ''))}
+          />
+          {showError && (
+            <Text style={style.errorText}>
+              Please enter a valid 10-digit number
+            </Text>
+          )}
+
+          <TouchableOpacity onPress={handleLogin} style={style.button}>
+            <Text style={style.buttonText}>Send OTP</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     </KeyboardAvoidingView>
   );
 };
+
 export default HomeScreen;
 
 const style = StyleSheet.create({
@@ -117,7 +170,7 @@ const style = StyleSheet.create({
     paddingLeft: SW(17),
   },
   text: {
-    fontWeight: 700,
+    fontWeight: '700',
     fontSize: SF(18),
     marginHorizontal: SW(28),
     paddingBottom: SH(18),
@@ -127,7 +180,6 @@ const style = StyleSheet.create({
   button: {
     backgroundColor: colorsset.theme_backgound_third,
     height: SH(48),
-    display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     marginHorizontal: SW(28),
@@ -137,7 +189,7 @@ const style = StyleSheet.create({
   },
   buttonText: {
     color: '#FFFFFF',
-    fontWeight: 600,
+    fontWeight: '600',
     fontSize: SF(18),
   },
   image: {
@@ -145,16 +197,15 @@ const style = StyleSheet.create({
     height: SH(283),
   },
   imageContainer: {
-    display: 'flex',
     alignItems: 'center',
   },
   title: {
-    fontWeight: 700,
+    fontWeight: '700',
     fontSize: SF(18),
     color: colorsset.theme_dark_gray,
   },
   subTitle: {
-    fontWeight: 700,
+    fontWeight: '700',
     fontSize: SF(28),
     lineHeight: SW(40),
     color: colorsset.theme_dark_gray,
@@ -163,8 +214,8 @@ const style = StyleSheet.create({
     marginTop: SH(92),
     marginHorizontal: SW(23),
     marginBottom: SH(36),
-    padding: 16, // optional
-    borderRadius: 10, // optional
+    padding: 16,
+    borderRadius: 10,
   },
   errorText: {
     color: 'red',

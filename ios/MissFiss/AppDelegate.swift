@@ -2,11 +2,15 @@ import UIKit
 import React
 import React_RCTAppDelegate
 import ReactAppDependencyProvider
+import Firebase
+import FirebaseMessaging
+import UserNotifications
+import RNCPushNotificationIOS
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
-  var window: UIWindow?
 
+  var window: UIWindow?
   var reactNativeDelegate: ReactNativeDelegate?
   var reactNativeFactory: RCTReactNativeFactory?
 
@@ -14,6 +18,16 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
   ) -> Bool {
+
+    // Initialize Firebase
+    if FirebaseApp.app() == nil {
+      FirebaseApp.configure()
+    }
+
+    // Set UNUserNotificationCenter delegate
+    UNUserNotificationCenter.current().delegate = self
+
+    // React Native new architecture setup
     let delegate = ReactNativeDelegate()
     let factory = RCTReactNativeFactory(delegate: delegate)
     delegate.dependencyProvider = RCTAppDependencyProvider()
@@ -31,8 +45,33 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     return true
   }
+
+  // FCM Device Token
+  func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+    Messaging.messaging().apnsToken = deviceToken
+  }
 }
 
+// MARK: - UNUserNotificationCenterDelegate
+extension AppDelegate: UNUserNotificationCenterDelegate {
+
+  // Foreground notification
+  func userNotificationCenter(_ center: UNUserNotificationCenter,
+                              willPresent notification: UNNotification,
+                              withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+    completionHandler([.alert, .sound, .badge])
+  }
+
+  // Notification tap
+  func userNotificationCenter(_ center: UNUserNotificationCenter,
+                              didReceive response: UNNotificationResponse,
+                              withCompletionHandler completionHandler: @escaping () -> Void) {
+    RNCPushNotificationIOS.didReceive(response)
+    completionHandler()
+  }
+}
+
+// MARK: - ReactNativeDelegate
 class ReactNativeDelegate: RCTDefaultReactNativeFactoryDelegate {
   override func sourceURL(for bridge: RCTBridge) -> URL? {
     self.bundleURL()

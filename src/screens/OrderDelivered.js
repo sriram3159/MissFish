@@ -11,19 +11,15 @@ import {
 import { SF, SH, SW } from '../utils/dimensions';
 import Icon from 'react-native-vector-icons/Ionicons';
 import images from '../image/images';
+import { getStatusBarHeight } from 'react-native-status-bar-height';
 
-const orderDelivered = ({ navigation, route }) => {
+const OrderDelivered = ({ navigation, route }) => {
   const { distance, duration } = route.params;
   const handleBack = () => {
     navigation.goBack();
   };
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar
-        backgroundColor="rgba(255, 255, 255, 1)"
-        barStyle="dark-content"
-        translucent={false} // This ensures StatusBar does not overlap content
-      />
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <View
         style={{
           borderRadius: SF(10),
@@ -67,6 +63,7 @@ const orderDelivered = ({ navigation, route }) => {
             fontWeight: 600,
             paddingHorizontal: SW(38),
             paddingTop: SH(5),
+            textAlign: 'center',
           }}
         >
           Well Done! Order Delivered Successfully – Your commitment ensures
@@ -155,13 +152,14 @@ const orderDelivered = ({ navigation, route }) => {
     </SafeAreaView>
   );
 };
-export default orderDelivered;
+export default OrderDelivered;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     // backgroundColor: colorsset.theme_backgound,
     backgroundColor: 'rgba(255, 255, 255, 1)',
+    paddingTop: getStatusBarHeight(),
   },
   back: {
     width: SF(30),

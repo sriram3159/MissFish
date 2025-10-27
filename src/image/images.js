@@ -13,6 +13,9 @@ const images = {
   delivery: require('./Delivery.webp'),
   person: require('./person.webp'),
   fssai: require('./fssai.webp'),
+  shop: require('./Shop.webp'),
+  destination: require('./Destination.webp'),
+  profile: require('./Profile.webp'),
 };
 
 export default images;
